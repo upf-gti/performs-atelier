@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { Configurer } from './Configurer.js';
+import { Configurer, ConfigurerHelper } from './Configurer.js';
 
 
 // Correct negative blenshapes shader of ThreeJS
@@ -27,6 +27,9 @@ class App {
         
         this.model1 = null;
         this.modelVisible = null;
+
+        this.configurer = null;
+        this.configurerHelper = null;
     }
 
     init() {
@@ -176,7 +179,13 @@ class App {
 
             this.skeleton.pose();
             this.configurer = new Configurer( this.skeleton, this.model1, this.scene );
+            this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera );
 
+            window.addEventListener( "pointermove", (e)=>{
+                this.configurerHelper.mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
+                this.configurerHelper.mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+                this.configurerHelper.update();
+            })
             this.animate();
             $('#loading').fadeOut(); //hide();
         });
@@ -201,7 +210,6 @@ class App {
         this.elapsedTime += delta;
 
         
-
 
         this.renderer.render( this.scene, this.camera );
 
