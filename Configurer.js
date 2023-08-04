@@ -153,6 +153,7 @@ class Configurer {
         delete this.points.body[ name ];
     }
 
+    // based on the 3d spherical dir, the ellipsoidal direction is computed. Only the X & Z axes are used. The Y is automatically discarded
     sphericalToEllipsoidal( worldDir ){
         let a = 2;
         let b = 1;
@@ -181,8 +182,8 @@ class Configurer {
             eyeR:       { x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
             eyeL:       { x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
 
-            earR:   { x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            earL:   { x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
+            earR:       { x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            earL:       { x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
             earlobeR:   { x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
             earlobeL:   { x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
 
@@ -203,8 +204,10 @@ class Configurer {
         let worldHeadPos = this.skeleton.bones[ this.boneMap[ "Head" ] ].getWorldPosition( new THREE.Vector3() );
         let worldDir = new THREE.Vector3(0,0,0); // direction for the ray
 
+        let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as body
         // position of bone and direction to sample. World space
         for( let f in faceLocations ){
+            let color = Math.random() * 0xffffff;
             let localDir = faceLocations[ f ];
             //like a matrix multiplication...
             worldDir.x = localDir.x * worldX.x + localDir.y * worldY.x + localDir.z * worldZ.x;
@@ -212,13 +215,14 @@ class Configurer {
             worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
             worldDir.normalize();
 
-            let rayResult =  this.doRaycast( worldHeadPos, worldDir, true );
-            let distanceDirection = new THREE.Vector3();
-            // like a matrix multiplication without the up direction
-            distanceDirection.x = localDir.x * worldX.x + localDir.z * worldZ.x;
-            distanceDirection.y = localDir.x * worldX.y + localDir.z * worldZ.y;
-            distanceDirection.z = localDir.x * worldX.z + localDir.z * worldZ.z;
-            this.createBodyPoint( f, this.skeleton.bones[ this.boneMap[ "Head" ] ].name, rayResult, this.sphericalToEllipsoidal( distanceDirection ) );              
+            let dirSidesXOffset = worldX.clone().multiplyScalar( Math.cos( 85 * Math.PI/180 ) );
+            worldDir.add( dirSidesXOffset ).add( dirSidesXOffset ); // start at SideLL and iteratively go to SideRR
+            
+            for ( let i = 0; i < sides.length; ++i ){
+                // need to subtract worldY from direction. Only X-Z plane is desired. sphericalToEllipsoidal already does this.
+                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
+                worldDir.sub( dirSidesXOffset );
+            }
         }
     }
 
@@ -236,15 +240,14 @@ class Configurer {
             "neutral": { tgBone: "Hips", pos: [ "Hips" ] }
         }
         
-        // compute front, up, right in scene world coordinates. Use root as the one defining the rotation difference from bind
-        let worldZ = this.worldZ;
-        let worldX = this.worldX;
-
         let worldPos = new THREE.Vector3(0,0,0);
         let worldDir = new THREE.Vector3(0,0,0);
-        
+        let _tempV3_0 = new THREE.Vector3(0,0,0);
+
+        let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as face
         // position of bone and direction to sample. World space
         for( let b in bodyLocations ){
+            let color = Math.random() * 0xffffff;
             let boneName = this.skeleton.bones[ this.boneMap[ bodyLocations[b].tgBone ] ].name;
             
             worldPos.set(0,0,0);
@@ -256,26 +259,17 @@ class Configurer {
             }
             worldPos.multiplyScalar( 1 / locs.length );
 
-            let color = Math.random() * 0xffffff;
-            // forward
-            worldDir.copy( worldZ );
-            this.createBodyPoint( b, boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color);
-            
-            // left at
-            worldDir.copy( worldX ).multiplyScalar( 0.5 ).add( worldZ ).normalize();
-            this.createBodyPoint( b + "_SideL", boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color);
+            let deltaAngle = 35 * Math.PI/180;
+            let angle = 2*deltaAngle;
+            // start at SideLL and iteratively go to SideRR
+            for ( let i = 0; i < sides.length; ++i ){
+                worldDir.copy( this.worldZ ).multiplyScalar( Math.cos( angle ) );
+                let x = _tempV3_0.copy( this.worldX ).multiplyScalar( Math.sin( angle ) );
+                worldDir.add( x ); 
+                this.createBodyPoint( b + sides[i], boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
+                angle -= deltaAngle;      
+            }
 
-            // left beside
-            worldDir.copy( worldX ).multiplyScalar( 3 ).add( worldZ ).normalize();
-            this.createBodyPoint( b + "_SideLL", boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color);
-
-            // right at
-            worldDir.copy( worldX ).multiplyScalar( -0.5 ).add( worldZ ).normalize();
-            this.createBodyPoint( b + "_SideR", boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color);
-
-            // right beside
-            worldDir.copy( worldX ).multiplyScalar( -3 ).add( worldZ ).normalize();
-            this.createBodyPoint( b + "_SideRR", boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color);
         }
     }
 
@@ -478,17 +472,17 @@ class Configurer {
         result.bodyLocations = {};
         for ( let a in this.points.body ){
             let o = this.points.body[a];
-            result.bodyLocations[a] = [ o.getBoneAssigned, o.getPos().applyMatrix4( this.meshToWorldMat4Inv ), o.getDir().applyMatrix3( this.meshToWorldMat3Inv ) ];
+            result.bodyLocations[a] = [ o.getBoneAssigned(), o.getPos().applyMatrix4( this.meshToWorldMat4Inv ), o.getDir().applyMatrix3( this.meshToWorldMat3Inv ) ];
         }
         result.handLocationsL = {};
         for ( let a in this.points.handL ){
             let o = this.points.handL[a];
-            result.handLocationsL[a] = [ o.getBoneAssigned, o.getPos().applyMatrix4( this.meshToWorldMat4Inv ) ];
+            result.handLocationsL[a] = [ o.getBoneAssigned(), o.getPos().applyMatrix4( this.meshToWorldMat4Inv ) ];
         }
         result.handLocationsR = {};
         for ( let a in this.points.handR ){
             let o = this.points.handR[a];
-            result.handLocationsR[a] = [ o.getBoneAssigned, o.getPos().applyMatrix4( this.meshToWorldMat4Inv ) ];
+            result.handLocationsR[a] = [ o.getBoneAssigned(), o.getPos().applyMatrix4( this.meshToWorldMat4Inv ) ];
         }
         return result;
     }
@@ -502,10 +496,10 @@ class ConfigPoint extends THREE.Group {
         this.configInfo = {
             name: name,
             boneAssigned: boneAssigned,
-            wdir: wdir? (new THREE.Vector3()).copy(wdir) : null,
             color: color,
             sphere: null,
             arrow: null,
+            useArrow: !!wdir,
         };
 
         this.name = name;
@@ -516,14 +510,13 @@ class ConfigPoint extends THREE.Group {
         this.add(sphere);
         
         // arrow for direction purposes. BodyLocation and FaceLocation
-        if ( wdir ){
-            let arrow = this.configInfo.arrow = new THREE.ArrowHelper();
-            arrow.setColor( color );
-            arrow.setLength( 0.10, 0.05, 0.01 );
-            arrow.setDirection({x:0,y:0,z:1}); // facing +z locally so lookAt can be used on configPoint
-            this.add( arrow );
-            this.setDir( wdir );
-        }
+        let arrow = this.configInfo.arrow = new THREE.ArrowHelper();
+        arrow.setColor( color );
+        arrow.setLength( 0.10, 0.05, 0.01 );
+        arrow.setDirection({x:0,y:0,z:1}); // facing +z locally so lookAt can be used on configPoint
+        this.add( arrow );
+        if ( wdir ){ this.setDir( wdir ); }
+        else{ arrow.visible = false;}
 
     }
 
@@ -533,7 +526,7 @@ class ConfigPoint extends THREE.Group {
     }
 
     getDir( result ){ 
-        if ( !this.configInfo.arrow ){ return null; }
+        if ( !this.configInfo.useArrow ){ return null; }
         if(!result){ result = new THREE.Vector3(); }
         result.set( 0,0,1 ).applyQuaternion( this.quaternion );
         return result;
@@ -548,11 +541,16 @@ class ConfigPoint extends THREE.Group {
     getName(){ return this.name; }
     getBoneAssigned(){ return this.configInfo.boneAssigned; }
 
+    // if null arrow is disable
     setDir( wdir ){
+        if ( !wdir ){ this.configInfo.useArrow = false; return; }
+        this.configInfo.useArrow = true;
         let lookAtPos = this.position.clone();
         lookAtPos.add( wdir );
         this.lookAt( lookAtPos ); // rotate entire group
     }
+
+    setBoneAssigned( boneAssigned ) { this.configInfo.boneAssigned = boneAssigned; }
 
 }
 
@@ -564,7 +562,7 @@ class ConfigurerHelper {
         this.point = new ConfigPoint( "test", 0, {x:0, y:0, z:0}, {x:0, y:0, z:1}, 0xff0000);
         this.configurer.scene.add( this.point );
         this.bone = this.configurer.skeleton.bones[ this.configurer.boneMap.Hips ];
-        this.mouse = {x: 0, y:0 }
+        this.mouse = { x: 0, y:0 }
     }
 
     update(){
