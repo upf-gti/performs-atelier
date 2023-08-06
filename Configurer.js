@@ -61,9 +61,9 @@ class Configurer {
 
 
         this.points = {
-            body: {},
-            handL: {},
-            handR: {},
+            body: [],
+            handL: [],
+            handR: [],
         };
 
         this.computeAxes();
@@ -110,47 +110,44 @@ class Configurer {
 
     deleteAllPoints(){
         for ( let a in this.points ){
-            this.deletePoints( this.points[a] );
-            this.points[a] = {};
+            this.points[a] = [];
         }
 
     }
 
-    deletePoints( list ){
-        for( let p in list ){
-            disposeObjectSafeThreejs( list[p] );
-        } 
+    _findPointInList( list, name ){
+        for ( let i = 0; i < list.length; ++i ){
+            if ( list[i].name == name ){ return { idx: i, obj: list[i] }; }
+        }
+        return null;
+    }
+    _createPoint( list, name, boneAssigned, wpos, wdir = null, color = null ){
+        if ( !list || !wpos || this._findPointInList( list, name ) ){ return null; }
+        list.push( { name: name, boneAssigned: boneAssigned, wpos: new THREE.Vector3(wpos.x,wpos.y,wpos.z), wdir: wdir? new THREE.Vector3(wdir.x,wdir.y,wdir.z) : null , color: color } );
     }
 
-    createHandPoint( isLeft, name, boneName, wpos, color = null ){
+    createHandPoint( isLeft, name, boneAssigned, wpos, color = null ){
         let destList = isLeft? this.points.handL : this.points.handR;
-        if ( destList[ name ] || !wpos ){ return null; }
-        let p = new ConfigPoint( name, boneName, wpos, null, color );
-        destList[ name ] = p;
-        this.scene.add( p );
-        return p;
+        return this._createPoint( destList, name, boneAssigned, wpos, null, color );
     }
 
-    createBodyPoint( name, boneName, wpos, wdir, color = null ){
-        if ( this.points.body[ name ] || !wpos ){ return null; }
-        let p = new ConfigPoint( name, boneName, wpos, wdir, color );
-        this.points.body[ name ] = p;
-        this.scene.add( p );
-        return p;
+    createBodyPoint( name, boneAssigned, wpos, wdir, color = null ){
+        return this._createPoint( this.points.body, name, boneAssigned, wpos, wdir, color );
     }
 
+    _deletePoint( list, name ){
+        let o = this._findPointInList( list, name );
+        if ( !o ){ return false; }
+        list.splice( o.idx, 1 );
+        return true;
+    }
     deleteHandPoint( isLeft, name ){
         let destList = isLeft ? this.points.handL : this.points.handR;
-        let o = destList[ name ];
-        if ( !o ){ return; }
-        disposeObjectSafeThreejs( o );
-        delete destList[ name ];
+        this._deletePoint( destList, name );
     }
-    deleteBodyPoint( name ){
-        let o = this.points.body[ name ];
-        if ( !o ){ return; }
-        disposeObjectSafeThreejs( o );
-        delete this.points.body[ name ];
+
+    deleteBodyPoint( name ){ 
+        this._deletePoint( this.points.body, name ); 
     }
 
     // based on the 3d spherical dir, the ellipsoidal direction is computed. Only the X & Z axes are used. The Y is automatically discarded
@@ -456,33 +453,24 @@ class Configurer {
         return null;
     }
 
-
-
-    scalePoints( s ){
-        for( let a in this.points ){
-            for ( let b in this.points[a] ){
-                this.points[a][b].scale.set( s,s,s );
-            }
-        }
-    }
-
     exportJSON(){
         // [ bone assigned, position in mesh coordinates, direction in mesh coordinates ]
         let result = {};
+        result.axes = [ this.rightAxisMeshCoords.clone(), this.upAxisMeshCoords.clone(), this.frontAxisMeshCoords.clone() ];
         result.bodyLocations = {};
         for ( let a in this.points.body ){
             let o = this.points.body[a];
-            result.bodyLocations[a] = [ o.getBoneAssigned(), o.getPos().applyMatrix4( this.meshToWorldMat4Inv ), o.getDir().applyMatrix3( this.meshToWorldMat3Inv ) ];
+            result.bodyLocations[ o.name ] = [ o.boneAssigned, o.wpos.clone().applyMatrix4( this.meshToWorldMat4Inv ), o.wdir.clone().applyMatrix3( this.meshToWorldMat3Inv ) ];
         }
         result.handLocationsL = {};
         for ( let a in this.points.handL ){
             let o = this.points.handL[a];
-            result.handLocationsL[a] = [ o.getBoneAssigned(), o.getPos().applyMatrix4( this.meshToWorldMat4Inv ) ];
+            result.handLocationsL[ o.name ] = [ o.boneAssigned, o.wpos.clone().applyMatrix4( this.meshToWorldMat4Inv ) ];
         }
         result.handLocationsR = {};
         for ( let a in this.points.handR ){
             let o = this.points.handR[a];
-            result.handLocationsR[a] = [ o.getBoneAssigned(), o.getPos().applyMatrix4( this.meshToWorldMat4Inv ) ];
+            result.handLocationsR[ o.name ] = [ o.boneAssigned, o.wpos.clone().applyMatrix4( this.meshToWorldMat4Inv ) ];
         }
         return result;
     }
@@ -490,44 +478,39 @@ class Configurer {
 
 
 class ConfigPoint extends THREE.Group {
-    constructor( name, boneAssigned, wpos, wdir = null, color = 0 ){
+    static _CT_SPHERE_SIZE = 0.01; 
+    constructor( configData ){
         super();
+        let color = configData.color;
         if ( isNaN(color) || color == null ){ color = Math.random() * 0xffffff; }
-        this.configInfo = {
-            name: name,
-            boneAssigned: boneAssigned,
-            color: color,
-            sphere: null,
-            arrow: null,
-            useArrow: !!wdir,
-        };
+        this.configInfo = { data: configData, sphere: null, arrow: null };
 
-        this.name = name;
-        this.position.copy( wpos );
+        this.name = configData.name;
+        this.position.copy( configData.wpos );
 
-        let sphere = this.configInfo.sphere = new THREE.Mesh( new THREE.SphereGeometry(0.005,16,16), new THREE.MeshStandardMaterial( { depthWrite:true, depthTest:true, color: color } ) );
+        let sphere = this.configInfo.sphere = new THREE.Mesh( new THREE.SphereGeometry(ConfigPoint._CT_SPHERE_SIZE,16,16), new THREE.MeshStandardMaterial( { depthWrite:true, depthTest:true, color: color } ) );
         sphere.position.set( 0,0,0 );
         this.add(sphere);
         
         // arrow for direction purposes. BodyLocation and FaceLocation
         let arrow = this.configInfo.arrow = new THREE.ArrowHelper();
         arrow.setColor( color );
-        arrow.setLength( 0.10, 0.05, 0.01 );
+        arrow.setLength( 0.10, 0.05, ConfigPoint._CT_SPHERE_SIZE );
         arrow.setDirection({x:0,y:0,z:1}); // facing +z locally so lookAt can be used on configPoint
         this.add( arrow );
-        if ( wdir ){ this.setDir( wdir ); }
+        if ( configData.wdir ){ this.setDir( configData.wdir ); }
         else{ arrow.visible = false;}
 
     }
 
     // different from clone() which is from threejs
     clonePoint(){
-        return new ConfigPoint( this.configInfo.name, this.configInfo.boneAssigned, this.position, this.configInfo.wdir, this.configInfo.color );
+        return new ConfigPoint( this.configInfo.data );
     }
 
     getDir( result ){ 
-        if ( !this.configInfo.useArrow ){ return null; }
-        if(!result){ result = new THREE.Vector3(); }
+        if ( !this.configInfo.arrow.visible ){ return null; }
+        if( !result ){ result = new THREE.Vector3(); }
         result.set( 0,0,1 ).applyQuaternion( this.quaternion );
         return result;
     }
@@ -538,19 +521,24 @@ class ConfigPoint extends THREE.Group {
         return result;
     }
 
-    getName(){ return this.name; }
-    getBoneAssigned(){ return this.configInfo.boneAssigned; }
+    getName(){ return this.configInfo.data.name; }
+    getBoneAssigned(){ return this.configInfo.data.boneAssigned; }
 
     // if null arrow is disable
     setDir( wdir ){
-        if ( !wdir ){ this.configInfo.useArrow = false; return; }
-        this.configInfo.useArrow = true;
+        if ( !wdir || !this.configInfo.arrow.visible ){ return; }
         let lookAtPos = this.position.clone();
         lookAtPos.add( wdir );
         this.lookAt( lookAtPos ); // rotate entire group
+        this.getDir( this.configInfo.data.wdir );
     }
 
-    setBoneAssigned( boneAssigned ) { this.configInfo.boneAssigned = boneAssigned; }
+    setPos( wpos ){
+        this.position.copy( wpos );
+        this.getPos( this.configInfo.data.wpos );
+    }
+
+    setBoneAssigned( boneAssigned ) { this.configInfo.data.boneAssigned = boneAssigned; }
 
 }
 
@@ -558,31 +546,135 @@ class ConfigPoint extends THREE.Group {
 class ConfigurerHelper {
     constructor( configurer, camera ){
         this.configurer = configurer;
+        this.scene = this.configurer.scene;
         this.camera = camera;
-        this.point = new ConfigPoint( "test", 0, {x:0, y:0, z:0}, {x:0, y:0, z:1}, 0xff0000);
-        this.configurer.scene.add( this.point );
         this.bone = this.configurer.skeleton.bones[ this.configurer.boneMap.Hips ];
         this.mouse = { x: 0, y:0 }
+        this.pointsScale = 1;
+        
+        this.hoverModeData = { p: null, lock: false };
+        this.meshModeData = { 
+            p: new ConfigPoint( {name: "test", boneAssigned:0, wpos: new THREE.Vector3(0,0,0), wdir: new THREE.Vector3(0,0,1), color: 0xff0000 } ), 
+            lock: false
+        };
+        this.scene.add( this.meshModeData.p );
+
+        this.points = {};
+        this.computePoints();
+
+        this.mode = 0; // 0 none, 1 hover, 2 mesh intersect
     }
 
-    update(){
-        let rayDir = new THREE.Vector3( this.mouse.x, this.mouse.y, -1); 
-        rayDir.applyMatrix4( this.camera.projectionMatrixInverse ).applyMatrix4( this.camera.matrixWorld );
-        rayDir.subVectors( rayDir, this.camera.position ).normalize(); 
-        let pos = this.configurer.doRaycast( this.camera.position, rayDir );
+    deletePointsFromList( list ){
+        for( let p in list ){
+            disposeObjectSafeThreejs( list[p] );
+        } 
+        list = [];
+    }
+    deleteAllPoints(){
+        for ( let a in this.points ){
+            this.deleteAllPoints( this.points[a] );
+        }
+    }
+
+    computePoints( ){
+        for ( let a in this.configurer.points ){
+            let list = this.configurer.points[a];
+            let resultArray = this.points[ a ] = [];
+            for( let p in list ){
+                let point = new ConfigPoint( list[p] );
+                resultArray.push( point );
+                this.scene.add( point );
+            }
+        }
+    }
+
+    setScale( s ){
+        this.pointsScale = s;
+        for ( let a in this.points ){
+            let list = this.points[a];
+            for ( let p = 0; p < list.length; ++p ){
+                list[p].scale.set( s,s,s );
+            }
+        }
+    }
+
+    rayPointsIntersect( rayOr, rayDir ){
+        let _tempV3_0 = new THREE.Vector3();
+        let _tempV3_1 = new THREE.Vector3();
+        let normRayDir = ( new THREE.Vector3() ).copy( rayDir ).normalize();
+
+        let rayPointDistSq = ConfigPoint._CT_SPHERE_SIZE * this.pointsScale;
+        rayPointDistSq = rayPointDistSq * rayPointDistSq;
+
+        let result = { dist:999999, rayT: 99999999, point: null };
+        for ( let a in this.points ){
+            let points = this.points[a];
+            for ( let p = 0; p < points.length; ++p ){
+                _tempV3_0.subVectors( points[p].position, rayOr );
+                let projectionIntoRay = _tempV3_0.dot( normRayDir );
+                _tempV3_1.copy( normRayDir ).multiplyScalar( projectionIntoRay );
+                let rejection = _tempV3_0.subVectors( _tempV3_0, _tempV3_1 );
+                if( rejection.lengthSq() < rayPointDistSq && projectionIntoRay < result.rayT ){
+                    result.rayT = projectionIntoRay;
+                    result.point = points[p];
+                    result.dist = rejection.length();
+                }
+            }
+        }
+
+        return result;
+    }
+
+    toggleLockMode(){
+        if ( this.mode == 1 ){ this.hoverModeData.lock = !this.hoverModeData.lock; }
+        else if ( this.mode == 2 ){ this.meshModeData.lock = !this.meshModeData.lock; }
+    }
+    setLockMode( lock = false ){
+        if ( this.mode == 1 ){ this.hoverModeData.lock = !!lock; }
+        else if ( this.mode == 2 ){ this.meshModeData.lock = !!lock; }
+    }
+
+
+    setHover( rayOr, rayDir ){
+        if ( this.hoverModeData.lock ){ return; }    
         
-        if ( pos ){
-            this.point.position.copy( pos );
+        let result = this.rayPointsIntersect( rayOr, rayDir );
+        if ( this.hoverModeData.p ){ this.hoverModeData.p.scale.set( this.pointsScale, this.pointsScale, this.pointsScale ); }
+        this.hoverModeData.p = null;
+        if ( result.point ){
+            result.point.scale.set( this.pointsScale*2, this.pointsScale*2, this.pointsScale*2 );
+            this.hoverModeData.p = result.point;
+        }
+    }
+
+    setMeshIntersect( rayOr, rayDir ){
+        if ( this.meshModeData.lock ){ return; }
+
+        let result = this.configurer.doRaycast( rayOr, rayDir );
+        
+        if ( result ){
+            this.meshModeData.p.setPos( result );
             this.bone = this.configurer.skeleton.bones[ this.configurer.boneMap.Hips ];
             
             let bonePos = this.bone.getWorldPosition( new THREE.Vector3() );
             let dir = new THREE.Vector3();
-            dir.subVectors( pos, bonePos );
+            dir.subVectors( result, bonePos );
             dir.projectOnPlane( this.configurer.worldY );
 
             dir = this.configurer.sphericalToEllipsoidal( dir )
-            this.point.setDir( dir );
+            this.meshModeData.p.setDir( dir );
         }
     }
+    update(){
+        let rayDir = new THREE.Vector3( this.mouse.x, this.mouse.y, -1); 
+        rayDir.applyMatrix4( this.camera.projectionMatrixInverse ).applyMatrix4( this.camera.matrixWorld );
+        rayDir.subVectors( rayDir, this.camera.position ).normalize(); 
+        
+        if ( this.mode == 1 ){ this.setHover( this.camera.position, rayDir ); }
+        if ( this.mode == 2 ){ this.setMeshIntersect( this.camera.position, rayDir ); }
+    }
+
+
 }
 export{ Configurer, ConfigurerHelper };

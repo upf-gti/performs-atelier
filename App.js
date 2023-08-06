@@ -184,8 +184,10 @@ class App {
             window.addEventListener( "pointermove", (e)=>{
                 this.configurerHelper.mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
                 this.configurerHelper.mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
-                this.configurerHelper.update();
-            })
+            });
+            window.addEventListener( "mouseup", (e)=>{
+                this.configurerHelper.toggleLockMode();
+            });
             this.animate();
             $('#loading').fadeOut(); //hide();
         });
@@ -210,6 +212,7 @@ class App {
         this.elapsedTime += delta;
 
         
+        this.configurerHelper.update();
 
         this.renderer.render( this.scene, this.camera );
 
