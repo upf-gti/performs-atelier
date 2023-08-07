@@ -179,14 +179,43 @@ class App {
 
             this.skeleton.pose();
             this.configurer = new Configurer( this.skeleton, this.model1, this.scene );
-            this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera );
+            this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera, this.renderer.domElement );
+            this.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
 
             window.addEventListener( "pointermove", (e)=>{
                 this.configurerHelper.mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
                 this.configurerHelper.mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
             });
+            window.addEventListener( "keyup", (e)=>{
+                switch( e.which ){
+                    case 27: // escape
+                        if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){ this.configurerHelper.cancelEdit(); } 
+                        break;
+                    case 49: // 1
+                        this.configurerHelper.setEditMode( 0 ); 
+                        break;
+                    case 50: // 2
+                        this.configurerHelper.setEditMode( 1 );
+                        break;
+                    case 51: // 3
+                        this.configurerHelper.setEditMode( 2 );
+                        break;
+                    case 70: // f
+                        this.configurerHelper.toggleFreezeEdit( 2 );
+                    default: break;
+                }
+            });
             window.addEventListener( "mouseup", (e)=>{
-                this.configurerHelper.toggleLockMode();
+                if ( e.shiftKey ){
+                    if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.HOVER ){
+                        this.configurerHelper.selectToEditFromHover();
+                    } 
+                }
+                else if ( e.altKey ){
+                    if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){
+                        this.configurerHelper.commitEdit();
+                    }
+                }
             });
             this.animate();
             $('#loading').fadeOut(); //hide();

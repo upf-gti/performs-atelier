@@ -122,12 +122,11 @@ function stringToDirection( str, outV, symmetry = 0x00, accumulate = false ){
 function disposeObjectSafeThreejs( obj ){
     if ( typeof(obj.dispose)== 'function' ){ obj.dispose(); }
     else{ 
-        for ( let i = 0; i < obj.children.length; ++i){
-            disposeObjectSafeThreejs( obj.children[i] );
-        }
         if ( obj.geometry ){ obj.geometry.dispose(); }
-        if ( obj.material ){ obj.material.dispose(); }
-
+        if ( obj.material ){ obj.material.dispose(); }    
+    }
+    for ( let i = 0; i < obj.children.length; ++i){
+        disposeObjectSafeThreejs( obj.children[i] );
     }
     if ( obj.parent ){ obj.parent.remove(obj); }
 }

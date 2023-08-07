@@ -1,5 +1,6 @@
 import * as THREE from "three"
 import { disposeObjectSafeThreejs, findIndexOfBone, objectConcat } from "./Utils.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 
 
 
@@ -121,18 +122,18 @@ class Configurer {
         }
         return null;
     }
-    _createPoint( list, name, boneAssigned, wpos, wdir = null, color = null ){
+    _createPoint( list, name, boneAssigned, boneSrcPos, wpos, wdir = null, color = null ){
         if ( !list || !wpos || this._findPointInList( list, name ) ){ return null; }
-        list.push( { name: name, boneAssigned: boneAssigned, wpos: new THREE.Vector3(wpos.x,wpos.y,wpos.z), wdir: wdir? new THREE.Vector3(wdir.x,wdir.y,wdir.z) : null , color: color } );
+        list.push( { name: name, boneAssigned: boneAssigned, boneSrcPos: new THREE.Vector3(boneSrcPos.x,boneSrcPos.y,boneSrcPos.z), wpos: new THREE.Vector3(wpos.x,wpos.y,wpos.z), wdir: wdir? new THREE.Vector3(wdir.x,wdir.y,wdir.z) : null , color: color } );
     }
 
-    createHandPoint( isLeft, name, boneAssigned, wpos, color = null ){
+    createHandPoint( isLeft, name, boneAssigned, boneSrcPos, wpos, color = null ){
         let destList = isLeft? this.points.handL : this.points.handR;
-        return this._createPoint( destList, name, boneAssigned, wpos, null, color );
+        return this._createPoint( destList, name, boneAssigned, boneSrcPos, wpos, null, color );
     }
 
-    createBodyPoint( name, boneAssigned, wpos, wdir, color = null ){
-        return this._createPoint( this.points.body, name, boneAssigned, wpos, wdir, color );
+    createBodyPoint( name, boneAssigned, boneSrcPos, wpos, wdir, color = null ){
+        return this._createPoint( this.points.body, name, boneAssigned, boneSrcPos, wpos, wdir, color );
     }
 
     _deletePoint( list, name ){
@@ -150,7 +151,10 @@ class Configurer {
         this._deletePoint( this.points.body, name ); 
     }
 
-    // based on the 3d spherical dir, the ellipsoidal direction is computed. Only the X & Z axes are used. The Y is automatically discarded
+    /**
+     * based on the 3d spherical dir, the ellipsoidal direction is computed. Only the X & Z axes are used. The Y is automatically discarded
+     * Returns new THREE.Vector3
+     */ 
     sphericalToEllipsoidal( worldDir ){
         let a = 2;
         let b = 1;
@@ -217,7 +221,7 @@ class Configurer {
             
             for ( let i = 0; i < sides.length; ++i ){
                 // need to subtract worldY from direction. Only X-Z plane is desired. sphericalToEllipsoidal already does this.
-                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
+                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
                 worldDir.sub( dirSidesXOffset );
             }
         }
@@ -263,7 +267,7 @@ class Configurer {
                 worldDir.copy( this.worldZ ).multiplyScalar( Math.cos( angle ) );
                 let x = _tempV3_0.copy( this.worldX ).multiplyScalar( Math.sin( angle ) );
                 worldDir.add( x ); 
-                this.createBodyPoint( b + sides[i], boneName, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
+                this.createBodyPoint( b + sides[i], boneName, worldPos, this.doRaycast( worldPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
                 angle -= deltaAngle;      
             }
 
@@ -332,7 +336,7 @@ class Configurer {
                 worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
                 worldDir.normalize();
 
-                this.createHandPoint( isLeft, l + d, boneName, this.doRaycast( worldPos, worldDir, false ), color );
+                this.createHandPoint( isLeft, l + d, boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color );
             }
         }
     }
@@ -357,22 +361,22 @@ class Configurer {
             color = Math.random() * 0xffffff;
             this.skeleton.bones[ fingerbases[i] ].getWorldPosition( worldPos );            
             let boneName = this.skeleton.bones[ fingerbases[i] ].name;
-            this.createHandPoint( isLeft, (i+2) + "BaseBack", boneName, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "BasePalmar", boneName, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "BaseBack", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "BasePalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
             
             this.skeleton.bones[ fingerbases[i]+1 ].getWorldPosition(_tempV3_0 );
-            worldPos.lerpVectors( worldPos, _tempV3_0, 0.35 );
-            this.createHandPoint( isLeft, (i+2) + "BaseRadial", boneName, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "BaseUlnar", boneName, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            worldPos.lerpVectors( worldPos, _tempV3_0, 0.5 );
+            this.createHandPoint( isLeft, (i+2) + "BaseRadial", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "BaseUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
           
             // mid finger
             color = Math.random() * 0xffffff;
             this.skeleton.bones[ fingerbases[i]+1 ].getWorldPosition( worldPos );            
             boneName = this.skeleton.bones[ fingerbases[i]+1 ].name;
-            this.createHandPoint( isLeft, (i+2) + "MidBack", boneName, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "MidPalmar", boneName, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "MidRadial", boneName, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "MidUlnar", boneName, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "MidBack", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "MidPalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "MidRadial", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "MidUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
             
             // PAD
             color = Math.random() * 0xffffff;
@@ -380,17 +384,17 @@ class Configurer {
             this.skeleton.bones[ fingerbases[i]+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
             worldPos.lerpVectors( worldPos, _tempV3_0, 0.5 );
             boneName = this.skeleton.bones[ fingerbases[i]+2 ].name;
-            this.createHandPoint( isLeft, (i+2) + "PadBack", boneName, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "PadPalmar", boneName, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "PadRadial", boneName, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "PadUlnar", boneName, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "PadBack", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "PadPalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "PadRadial", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "PadUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
            
             //Tip
             this.skeleton.bones[ fingerbases[i]+2 ].getWorldPosition( worldPos );            
             this.skeleton.bones[ fingerbases[i]+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
             worldDir.subVectors(  _tempV3_0, worldPos ).normalize();
             boneName = this.skeleton.bones[ fingerbases[i]+2 ].name;
-            this.createHandPoint( isLeft, (i+2) + "Tip", boneName, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "Tip", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
         }
 
 
@@ -404,16 +408,16 @@ class Configurer {
             this.skeleton.bones[ thumbidx + i + 1 ].getWorldPosition( _tempV3_0 );            
             _tempV3_0.subVectors( _tempV3_0, worldPos ).normalize();
             worldDir.crossVectors( _tempV3_0, worldZ ).normalize();
-            this.createHandPoint( isLeft, s[i] + "Ulnar", boneName, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballUlnar", boneName, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
-            this.createHandPoint( isLeft, s[i] + "Radial", boneName, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballRadial", boneName, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "Ulnar", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "Radial", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballRadial", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
         
             worldDir.crossVectors( worldDir, _tempV3_0 ).normalize();
-            this.createHandPoint( isLeft, s[i] + "Back", boneName, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballBack", boneName, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
-            this.createHandPoint( isLeft, s[i] + "Palmar", boneName, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballPalmar", boneName, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "Back", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballBack", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "Palmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballPalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
         }
         
         // thumb Tip
@@ -421,7 +425,7 @@ class Configurer {
         this.skeleton.bones[ thumbidx+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
         worldDir.subVectors(  _tempV3_0, worldPos ).normalize();
         let boneName = this.skeleton.bones[ thumbidx+2 ].name;
-        this.createHandPoint( isLeft, "Tip", boneName, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+        this.createHandPoint( isLeft, "Tip", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
     }
 
 
@@ -440,7 +444,7 @@ class Configurer {
         this.rayDir.normalize();
     
         this.raycaster.set( this.rayOr, this.rayDir );
-        let intersections = this.raycaster.intersectObjects( this.model.children, true ); //window.global.app.scene.children, true);
+        let intersections = this.raycaster.intersectObjects( this.model.children, true );
 
         if( intersections && intersections.length ){          
             // many intersections may be returned (even arrowhelpers, gridhelpers). Take only meshes from the glb 
@@ -523,6 +527,8 @@ class ConfigPoint extends THREE.Group {
 
     getName(){ return this.configInfo.data.name; }
     getBoneAssigned(){ return this.configInfo.data.boneAssigned; }
+    getBoneSrcPos(){ return this.configInfo.data.boneSrcPos; } // from where the raycast was computed
+    getColor(){ return this.configInfo.sphere.material.color; }
 
     // if null arrow is disable
     setDir( wdir ){
@@ -539,30 +545,52 @@ class ConfigPoint extends THREE.Group {
     }
 
     setBoneAssigned( boneAssigned ) { this.configInfo.data.boneAssigned = boneAssigned; }
-
+    setColor( color ){ 
+        this.configInfo.data.color = color; 
+        this.configInfo.sphere.material.color = color; 
+        this.configInfo.arrow.setColor( new THREE.Color(color) ); 
+    }
 }
 
 
 class ConfigurerHelper {
-    constructor( configurer, camera ){
+    static _E_MODES = { NONE: 0, HOVER: 1, EDIT: 3 };
+    constructor( configurer, camera, canvasDom ){
         this.configurer = configurer;
-        this.scene = this.configurer.scene;
+        this.mode = ConfigurerHelper._E_MODES.HOVER;
+        
+        this.baseThreejsGroup = new THREE.Group();
+        this.baseThreejsGroup.position.set(0,0,0);
+        this.configurer.scene.add( this.baseThreejsGroup );
+
         this.camera = camera;
-        this.bone = this.configurer.skeleton.bones[ this.configurer.boneMap.Hips ];
         this.mouse = { x: 0, y:0 }
         this.pointsScale = 1;
         
-        this.hoverModeData = { p: null, lock: false };
-        this.meshModeData = { 
-            p: new ConfigPoint( {name: "test", boneAssigned:0, wpos: new THREE.Vector3(0,0,0), wdir: new THREE.Vector3(0,0,1), color: 0xff0000 } ), 
-            lock: false
-        };
-        this.scene.add( this.meshModeData.p );
+        this.hoverModeData = { p: null };
+        this.editModeData = {
+            p: new ConfigPoint( {name: "editMode", boneAssigned:0, wpos: new THREE.Vector3(0,0,0), wdir: new THREE.Vector3(0,0,1), color: 0x0000ff } ), 
+            pointSelected: null,
+            frozen: false, // when on edit, disables the point updates. Useful to keep the point static wihtout commiting results 
+            mode: 0, /* mode: mesh intersection (0), translate guizmo (1), rotate guizmo (2) */
+        }
+
+        this.baseThreejsGroup.add( this.editModeData.p );
+
+        this.transformControls = new TransformControls( this.camera, canvasDom );
+        this.transformControls.attach( this.editModeData.p );
+        this.configurer.scene.add( this.transformControls );
+
+        this.setEditMode(0);
 
         this.points = {};
         this.computePoints();
 
-        this.mode = 0; // 0 none, 1 hover, 2 mesh intersect
+    }
+
+    dispose(){
+        this.deleteAllPoints();
+        disposeObjectSafeThreejs( this.baseThreejsGroup );
     }
 
     deletePointsFromList( list ){
@@ -581,10 +609,10 @@ class ConfigurerHelper {
         for ( let a in this.configurer.points ){
             let list = this.configurer.points[a];
             let resultArray = this.points[ a ] = [];
-            for( let p in list ){
+            for( let p = 0; p < list.length; ++p){
                 let point = new ConfigPoint( list[p] );
                 resultArray.push( point );
-                this.scene.add( point );
+                this.baseThreejsGroup.add( point );
             }
         }
     }
@@ -597,7 +625,105 @@ class ConfigurerHelper {
                 list[p].scale.set( s,s,s );
             }
         }
+
+        this.editModeData.p.scale.set(s,s,s);
     }
+
+    // when on edit mode, the user can edit using ray-mesh (0), gizmo translate (1), gizmo rotate (2)
+    setEditMode( editMode = 0 ){
+        switch( editMode ){
+            case 0: 
+                this.transformControls.showX = false;
+                this.transformControls.showY = false;
+                this.transformControls.showZ = false;
+                this.transformControls.enabled = false;
+                break;
+            case 1: 
+                this.transformControls.setMode("translate");
+                this.transformControls.showX = true;
+                this.transformControls.showY = true;
+                this.transformControls.showZ = true;
+                this.transformControls.enabled = !this.editModeData.frozen;
+                break;
+            case 2:
+                this.transformControls.setMode("rotate");
+                this.transformControls.showX = true;
+                this.transformControls.showY = true;
+                this.transformControls.showZ = true;
+                this.transformControls.enabled = !this.editModeData.frozen;
+                break;
+            default: 
+                return; 
+                break; 
+        }
+        this.editModeData.mode = editMode;
+    }
+
+    selectToEdit( point ){
+        if( !point ){ return false; }
+        this.cancelEdit(); // just in case
+        this.editModeData.pointSelected = point;
+        this.editModeData.p.setPos( this.editModeData.pointSelected.getPos() );
+        this.editModeData.p.setDir( this.editModeData.pointSelected.getDir() );
+        this.editModeData.p.visible = true;
+        point.visible = false;
+
+        this.editModeData.frozen = false;
+        this.setEditMode( this.editModeData.mode ); // enable and show transform gizmo if necessary
+
+        // cancel any hover present
+        if ( this.hoverModeData.p ){
+            this.hoverModeData.p.scale.set( this.pointsScale, this.pointsScale, this.pointsScale );
+            this.hoverModeData.p = null;
+        }        
+        this.mode = ConfigurerHelper._E_MODES.EDIT;
+        return true;
+    }
+
+    selectToEditFromHover(){ return this.selectToEdit( this.hoverModeData.p ); }
+    
+    commitEdit(){
+        if ( this.editModeData.pointSelected ){ 
+            this.editModeData.pointSelected.setPos( this.editModeData.p.getPos() );
+            this.editModeData.pointSelected.setDir( this.configurer.sphericalToEllipsoidal( this.editModeData.p.getDir() ) );
+        }
+        return this.cancelEdit();
+    }
+
+    // todo: maybe rename to setToHover or similar
+    cancelEdit(){
+        this.mode = ConfigurerHelper._E_MODES.HOVER;
+        
+        // hide gizmo
+        this.transformControls.showX = false;
+        this.transformControls.showY = false;
+        this.transformControls.showZ = false;
+        this.transformControls.enabled = false;
+        this.editModeData.p.visible = false;
+        
+        // cancel changes to point selected and deattach
+        if ( this.editModeData.pointSelected ){             
+            this.editModeData.pointSelected.visible = true;
+            this.editModeData.pointSelected = null;
+            return true; 
+        }
+
+        return false;
+    }
+
+    toggleFreezeEdit(){ this.setFreezeEdit( !this.editModeData.frozen ); }
+    setFreezeEdit( freeze = false ){ 
+        if ( this.mode == ConfigurerHelper._E_MODES.EDIT && this.editModeData.pointSelected ){
+            this.editModeData.frozen = !!freeze; 
+            this.transformControls.enabled = !freeze;
+        }
+    }
+
+
+    getPointHovered(){ return this.hoverModeData.p; }
+    getPointSelected(){ return this.editModeData.pointSelected; }
+    getMode(){ return this.mode; }
+
 
     rayPointsIntersect( rayOr, rayDir ){
         let _tempV3_0 = new THREE.Vector3();
@@ -626,53 +752,50 @@ class ConfigurerHelper {
         return result;
     }
 
-    toggleLockMode(){
-        if ( this.mode == 1 ){ this.hoverModeData.lock = !this.hoverModeData.lock; }
-        else if ( this.mode == 2 ){ this.meshModeData.lock = !this.meshModeData.lock; }
-    }
-    setLockMode( lock = false ){
-        if ( this.mode == 1 ){ this.hoverModeData.lock = !!lock; }
-        else if ( this.mode == 2 ){ this.meshModeData.lock = !!lock; }
-    }
-
-
-    setHover( rayOr, rayDir ){
-        if ( this.hoverModeData.lock ){ return; }    
-        
-        let result = this.rayPointsIntersect( rayOr, rayDir );
+    updateHover( rayOr, rayDir ){
         if ( this.hoverModeData.p ){ this.hoverModeData.p.scale.set( this.pointsScale, this.pointsScale, this.pointsScale ); }
         this.hoverModeData.p = null;
+        let result = this.rayPointsIntersect( rayOr, rayDir );
         if ( result.point ){
             result.point.scale.set( this.pointsScale*2, this.pointsScale*2, this.pointsScale*2 );
             this.hoverModeData.p = result.point;
         }
     }
 
-    setMeshIntersect( rayOr, rayDir ){
-        if ( this.meshModeData.lock ){ return; }
+    updateEdit( rayOr, rayDir ){
+        if ( !this.editModeData.pointSelected ){ 
+            this.mode = ConfigurerHelper._E_MODES.HOVER; 
+            return; 
+        }
 
+        // update only if on "mesh intersect" mode
+        if ( this.editModeData.mode != 0 || this.editModeData.frozen ){ return; }
+
+        // raycast to mesh 
         let result = this.configurer.doRaycast( rayOr, rayDir );
         
         if ( result ){
-            this.meshModeData.p.setPos( result );
-            this.bone = this.configurer.skeleton.bones[ this.configurer.boneMap.Hips ];
-            
-            let bonePos = this.bone.getWorldPosition( new THREE.Vector3() );
+            this.editModeData.p.setPos( result );
+            const boneSrcPos = this.editModeData.pointSelected.getBoneSrcPos();
             let dir = new THREE.Vector3();
-            dir.subVectors( result, bonePos );
+            dir.subVectors( result, boneSrcPos );
             dir.projectOnPlane( this.configurer.worldY );
-
-            dir = this.configurer.sphericalToEllipsoidal( dir )
-            this.meshModeData.p.setDir( dir );
-        }
+            dir.normalize();
+            dir = this.configurer.sphericalToEllipsoidal( dir );
+            dir.normalize();
+            this.editModeData.p.setDir( dir );
+        }        
     }
+
     update(){
         let rayDir = new THREE.Vector3( this.mouse.x, this.mouse.y, -1); 
         rayDir.applyMatrix4( this.camera.projectionMatrixInverse ).applyMatrix4( this.camera.matrixWorld );
         rayDir.subVectors( rayDir, this.camera.position ).normalize(); 
-        
-        if ( this.mode == 1 ){ this.setHover( this.camera.position, rayDir ); }
-        if ( this.mode == 2 ){ this.setMeshIntersect( this.camera.position, rayDir ); }
+
+        switch( this.mode ){
+            case ConfigurerHelper._E_MODES.HOVER: this.updateHover( this.camera.position, rayDir ); break;
+            case ConfigurerHelper._E_MODES.EDIT: this.updateEdit( this.camera.position, rayDir ); break;
+        }
     }
 
 
