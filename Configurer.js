@@ -88,7 +88,8 @@ class Configurer {
         this.upAxisMeshCoords.subVectors( a, b ).normalize();
         
         this.frontAxisMeshCoords.crossVectors( this.rightAxisMeshCoords, this.upAxisMeshCoords ).normalize();
-        
+        this.upAxisMeshCoords.crossVectors( this.frontAxisMeshCoords, this.rightAxisMeshCoords ).normalize();
+
         this.worldZ = this.frontAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
         this.worldY = this.upAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
         this.worldX = this.rightAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
