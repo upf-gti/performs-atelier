@@ -1,3 +1,4 @@
+``e`` to export config
 When hovering a point press ``ctrl + Left_Mouse`` to edit that point
 <br>
 In edit mode:

@@ -143,10 +143,11 @@ class App {
             skeleton.pose();
         })
         
-        this.loaderGLB.load( './EvaLowTexturesV2Decimated.glb', (glb) => {
+        let filePath = './EvaLowTexturesV2Decimated.glb';
+        this.loaderGLB.load( filePath , (glb) => {
         // this.loaderGLB.load( './kevinRigBlender.glb', (glb) => {
             let model = this.model1 = glb.scene;
-
+            this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
             model.traverse( (object) => {
                 if ( object.isMesh || object.isSkinnedMesh ) {
                     if ( object.isSkinnedMesh ){ this.skeleton = object.skeleton;  object.isMesh = true; object.isSkinnedMesh = false; }
@@ -202,6 +203,24 @@ class App {
                         break;
                     case 70: // f
                         this.configurerHelper.toggleFreezeEdit( 2 );
+
+                    case 69: // e
+                    {   // export
+                        let configurerJSON = this.configurer.exportJSON();
+                        configurerJSON._comments = "All points are in mesh space (no matrices of any kind are applied)"
+                        let json = { _comments: this.modelFileName, bodyController: configurerJSON };
+
+                        let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent( JSON.stringify( json , (key,value)=>{
+                            if ( typeof( value ) == "number" ){ return Number( value.toFixed(6) ); }
+                            else{ return value; }
+                        } ) );
+                        let downloadAnchorNode = document.createElement('a');
+                        downloadAnchorNode.setAttribute("href", dataStr);
+                        downloadAnchorNode.setAttribute("download", "config.json" );
+                        document.body.appendChild(downloadAnchorNode); // required for firefox
+                        downloadAnchorNode.click();
+                        downloadAnchorNode.remove();
+                    }
                     default: break;
                 }
             });

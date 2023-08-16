@@ -296,14 +296,14 @@ class Configurer {
                 dir: { 
                     Left: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
                     Right: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
-                    Back: { x:0, y:-1, z:0 }, Palmar: { x:0, y:1, z:0 } }
+                    Back: { x:0, y:-1, z:0 }, Front: { x:0, y:1, z:0 } }
             },
             Upperarm: {
                 tgBone: "Arm",   pos: [ "Elbow", "Arm" ],
                 dir: { 
                     Left: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
                     Right: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
-                    Back: { x:0, y:-1, z:0 }, Palmar: { x:0, y:1, z:0 } }
+                    Back: { x:0, y:-1, z:0 }, Front: { x:0, y:1, z:0 } }
             }
         }
         
@@ -426,7 +426,7 @@ class Configurer {
         this.skeleton.bones[ thumbidx+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
         worldDir.subVectors(  _tempV3_0, worldPos ).normalize();
         let boneName = this.skeleton.bones[ thumbidx+2 ].name;
-        this.createHandPoint( isLeft, "Tip", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+        this.createHandPoint( isLeft, "1Tip", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
     }
 
 
