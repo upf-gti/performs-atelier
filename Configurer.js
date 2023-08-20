@@ -35,7 +35,7 @@ class Configurer {
     constructor( skeleton, model, scene ){
         this.model = model;
         this.skeleton = skeleton;
-        this.skeleton.pose();
+        this.skeleton.pose(); // set on bind pose
         this.skeleton.bones[0].updateWorldMatrix( true, true ); // parents and children also
         this.scene = scene; scene.updateWorldMatrix( true, true );
 
@@ -96,6 +96,116 @@ class Configurer {
 
     }
 
+    computeFingerAxes(){
+        this.fingerAxes = { 
+            R: { bends: [], splays: [], quats: [] }, 
+            L: { bends: [], splays: [], quats: [] } 
+        };
+        let bones = this.skeleton.bones;
+        let bendAxis = new THREE.Vector3();
+        let splayAxis = new THREE.Vector3();
+        let fingerDir = new THREE.Vector3();
+
+        let tempM3_0 = new THREE.Matrix3();
+        let tempV3_0 = new THREE.Vector3();
+        let tempV3_1 = new THREE.Vector3();
+
+
+        let thumb = this.boneMap.RHandThumb;
+        let index = this.boneMap.RHandIndex;
+        let middle = this.boneMap.RHandMiddle;
+        let ring = this.boneMap.RHandRing;
+        let pinky = this.boneMap.RHandPinky;
+        let fingerAxesHand = this.fingerAxes.R; 
+
+        while( true ){  // do it for both hands
+            // thumb
+            for ( let i = 0; i < 3; ++i ){
+                tempM3_0.setFromMatrix4( bones[ thumb + i ].matrixWorld ).invert();
+                bones[ thumb + i ].getWorldPosition( tempV3_0 );
+                bones[ thumb + i + 1 ].getWorldPosition( fingerDir );
+                fingerDir.subVectors( fingerDir, tempV3_0 ).normalize(); // finger direction 
+                bendAxis.crossVectors( this.worldZ, fingerDir ).normalize(); // assuming Tpose. Reversed from finger computation
+                fingerAxesHand.bends.push( bendAxis.clone().applyMatrix3( this.meshToWorldMat3Inv ).normalize() ); // from world to mesh space
+                // let arrow = new THREE.ArrowHelper( bendAxis, tempV3_0, 0.1, 0xff0000 ); this.scene.add( arrow );
+                fingerAxesHand.quats.push( bones[ thumb + i ].quaternion.clone() );
+                if ( i == 0 ){
+                    splayAxis.crossVectors( bendAxis, fingerDir ).normalize(); // assuming Tpose
+                    if ( fingerAxesHand == this.fingerAxes.R ){ splayAxis.multiplyScalar( -1 ); }
+                    // let arrow = new THREE.ArrowHelper( splayAxis, tempV3_0, 0.1, 0x00ff00 ); this.scene.add( arrow );
+                    fingerAxesHand.splays.push( splayAxis.clone().applyMatrix3( this.meshToWorldMat3Inv ).normalize() ); // from world to mesh space    
+                }
+                if ( i == 0 ){
+                    //assuming bones are in bind pose
+                    // compute quat so thumb is straight and parallel to fingers instead of whatever pose it is in the mesh
+                    let completeThumbDir = new THREE.Vector3();
+                    bones[ thumb + i ].getWorldPosition( tempV3_0 );
+                    bones[ thumb + i + 3 ].getWorldPosition( tempV3_1 );
+                    completeThumbDir.subVectors( tempV3_1, tempV3_0 ).normalize();
+
+                    let completeMiddleFingerDir = new THREE.Vector3();
+                    bones[ middle + i ].getWorldPosition( tempV3_0 );
+                    bones[ middle + i + 3 ].getWorldPosition( tempV3_1 );
+                    completeMiddleFingerDir.subVectors( tempV3_1, tempV3_0 ).normalize();
+                    completeMiddleFingerDir.multiplyScalar( Math.cos(60*Math.PI/180) ).addScaledVector( this.worldZ, Math.sin(60*Math.PI/180) );
+                    let tempQ = new THREE.Quaternion();
+                    let resultQ = new THREE.Quaternion();
+
+                    let thumbProjection = { x: bendAxis.dot(completeThumbDir), y: splayAxis.dot(completeThumbDir), z: fingerDir.dot(completeThumbDir) };
+                    let middleProjection = { x: bendAxis.dot(completeMiddleFingerDir), y: splayAxis.dot(completeMiddleFingerDir), z: fingerDir.dot(completeMiddleFingerDir) };
+
+                    let thumbAngles = { elevation: - Math.asin( thumbProjection.y ), bearing: Math.atan2( thumbProjection.x, thumbProjection.z) };
+                    let middleAngles = { elevation: - Math.asin( middleProjection.y ), bearing: Math.atan2( middleProjection.x, middleProjection.z) };
+
+                    let afterBindSplayAxis = splayAxis.clone().applyMatrix3( tempM3_0 ).applyQuaternion( bones[ thumb ].quaternion ).normalize();
+                    let afterBindBendAxis = bendAxis.clone().applyMatrix3( tempM3_0 ).applyQuaternion( bones[ thumb ].quaternion ).normalize();
+
+                    resultQ.set(0,0,0,1);
+                    resultQ.premultiply( tempQ.setFromAxisAngle( afterBindSplayAxis, -thumbAngles.bearing    * (fingerAxesHand == this.fingerAxes.L ? -1 : 1) ) );
+                    resultQ.premultiply( tempQ.setFromAxisAngle( afterBindBendAxis,  -thumbAngles.elevation  * (fingerAxesHand == this.fingerAxes.L ? -1 : 1) ) );
+                    resultQ.premultiply( tempQ.setFromAxisAngle( afterBindBendAxis,   middleAngles.elevation * (fingerAxesHand == this.fingerAxes.L ? -1 : 1) ) );
+                    resultQ.premultiply( tempQ.setFromAxisAngle( afterBindSplayAxis,  middleAngles.bearing   * (fingerAxesHand == this.fingerAxes.L ? -1 : 1) ) );
+                    resultQ.normalize();
+
+                    fingerAxesHand.quats[ fingerAxesHand.quats.length - 1 ].premultiply( resultQ ).normalize();
+                }
+            }
+            // fingers - no thumb
+            let fingers = [ index, middle, ring, pinky ];
+            let bendBaseTweak = [ - Math.sin(6*Math.PI/180), 0, Math.sin(6*Math.PI/180), Math.sin(7*Math.PI/180) ];
+            for ( let f = 0; f < fingers.length; ++f ){
+                bones[ fingers[f] ].getWorldPosition( tempV3_0 );
+                bones[ fingers[f] + 2 ].getWorldPosition( fingerDir );
+                fingerDir.subVectors( fingerDir, tempV3_0 ).normalize(); // finger direction 
+                splayAxis.crossVectors( fingerDir, this.worldZ ).normalize(); // assuming Tpose
+                bendAxis.crossVectors( splayAxis, fingerDir ).normalize(); // assuming Tpose
+                for ( let i = 0; i < 3; ++i ){
+                    let bendLocal = bendAxis.clone(); 
+                    tempM3_0.setFromMatrix4( bones[ fingers[f] + i ].matrixWorld ).invert();
+                    if ( i == 0 ){
+                        fingerAxesHand.splays.push( splayAxis.clone().applyMatrix3( this.meshToWorldMat3Inv ).normalize() ); // from world to mesh space    
+                        // let arrow = new THREE.ArrowHelper( splayAxis, tempV3_0, 0.1, 0x00ff00 ); this.scene.add( arrow );
+                        bendLocal.multiplyScalar( 1 - Math.abs( bendBaseTweak[f] ) ).addScaledVector( fingerDir, bendBaseTweak[f] );
+                    }
+                    if ( fingerAxesHand == this.fingerAxes.L ){ bendLocal.multiplyScalar( -1 ); }
+                    // let arrow = new THREE.ArrowHelper( bendLocal, bones[ fingers[f] + i ].getWorldPosition( tempV3_0 ), 0.1, 0xff0000 ); this.scene.add( arrow );
+                    bendLocal.applyMatrix3( this.meshToWorldMat3Inv ).normalize(); // from world to mesh space
+                    fingerAxesHand.bends.push( bendLocal ); // from world to local space
+                    fingerAxesHand.quats.push( bones[ fingers[f] + i ].quaternion.clone() );
+                }
+            }
+
+            if ( fingerAxesHand == this.fingerAxes.L ){ break; }
+            thumb = this.boneMap.LHandThumb;
+            index = this.boneMap.LHandIndex;
+            middle = this.boneMap.LHandMiddle;
+            ring = this.boneMap.LHandRing;
+            pinky = this.boneMap.LHandPinky;
+            fingerAxesHand = this.fingerAxes.L; 
+
+        }
+    }
+
     computeConfig( ){
         this.skeleton.bones[0].updateWorldMatrix( true, true ); // parents and children also
 
@@ -108,6 +218,7 @@ class Configurer {
         this.computeHandLocations( false ); // right
         this.computeHandLocations( true ); // left
 
+        this.computeFingerAxes();
     }
 
     deleteAllPoints(){
@@ -234,8 +345,8 @@ class Configurer {
             "neck": { tgBone: "Neck", pos: [ "Neck", "Neck", "Head" ] },
             "shoulderTop": { tgBone: "ShouldersUnion", pos: [ "LShoulder", "RShoulder", "Neck" ] },
             "shoulderLine": { tgBone: "ShouldersUnion", pos: [ "LShoulder", "RShoulder", "ShouldersUnion" ] },
-            "shoulderL": { tgBone: "LShoulder", pos: [ "LArm" ] },
-            "shoulderR": { tgBone: "RShoulder", pos: [ "RArm" ] },
+            "shoulderL": { tgBone: "ShouldersUnion", pos: [ "LArm" ] },
+            "shoulderR": { tgBone: "ShouldersUnion", pos: [ "RArm" ] },
             "chest": { tgBone: "ShouldersUnion", pos: [ "ShouldersUnion" ] },
             "stomach": { tgBone: "Stomach", pos: [ "Stomach" ] },
             "belowstomach": { tgBone: "BelowStomach", pos: [ "BelowStomach" ] },
@@ -477,6 +588,12 @@ class Configurer {
             let o = this.points.handR[a];
             result.handLocationsR[ o.name ] = [ o.boneAssigned, o.wpos.clone().applyMatrix4( this.meshToWorldMat4Inv ) ];
         }
+
+        result.fingerAxes = JSON.parse( JSON.stringify( this.fingerAxes , (key,value)=>{
+            if ( value.isQuaternion ){ return { x:value.x, y:value.y, z:value.z, w:value.w } }
+            else if ( typeof( value ) == "number" ){ return Number( value.toFixed(6) ); }
+            else{ return value; }
+        } ) );
         return result;
     }
 }
@@ -602,11 +719,13 @@ class ConfigurerHelper {
     }
     deleteAllPoints(){
         for ( let a in this.points ){
-            this.deleteAllPoints( this.points[a] );
+            this.deletePointsFromList( this.points[a] );
+            this.points[a] = [];
         }
     }
 
     computePoints( ){
+        this.deleteAllPoints();
         for ( let a in this.configurer.points ){
             let list = this.configurer.points[a];
             let resultArray = this.points[ a ] = [];
@@ -616,6 +735,8 @@ class ConfigurerHelper {
                 this.baseThreejsGroup.add( point );
             }
         }
+        // this.setVisibility( false );
+
     }
 
     setScale( s ){
@@ -628,6 +749,13 @@ class ConfigurerHelper {
         }
 
         this.editModeData.p.scale.set(s,s,s);
+    }
+
+    toggleVisibility(){
+        this.baseThreejsGroup.visible = !this.baseThreejsGroup.visible;
+    }
+    setVisibility( pointsVisibility ){
+        this.baseThreejsGroup.visible = !!pointsVisibility;
     }
 
     // when on edit mode, the user can edit using ray-mesh (0), gizmo translate (1), gizmo rotate (2)

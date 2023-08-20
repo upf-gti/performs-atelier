@@ -111,8 +111,9 @@ class App {
         // so the screen is not black while loading
         this.renderer.render( this.scene, this.camera );
         
-        this.loaderGLB.load( './EvaLowTexturesV2Decimated.glb', (glb) => {
-        // this.loaderGLB.load( './kevinRigBlender.glb', (glb) => {
+        let filePath = './EvaLowTexturesV2Decimated.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
+        // let filePath = './kevinRigBlender.glb'; let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
+        this.loaderGLB.load( filePath , (glb) => {
             let model = this.modelVisible = glb.scene;
             let skeleton = null;
             model.traverse( (object) => {
@@ -133,8 +134,9 @@ class App {
                     object.position.set(0,0,0);
                 }
             } );
+            this.skeletonVisible = skeleton;
             model.position.set( 1,0,0 );
-            model.rotateOnAxis( new THREE.Vector3(1,0,0), -Math.PI/2 );
+            model.quaternion.premultiply( modelRotation );
             model.castShadow = true;
 
             this.scene.add(model);
@@ -142,10 +144,8 @@ class App {
 
             skeleton.pose();
         })
-        
-        let filePath = './EvaLowTexturesV2Decimated.glb';
+
         this.loaderGLB.load( filePath , (glb) => {
-        // this.loaderGLB.load( './kevinRigBlender.glb', (glb) => {
             let model = this.model1 = glb.scene;
             this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
             model.traverse( (object) => {
@@ -169,7 +169,7 @@ class App {
                 }
             } );
             model.position.set( 1,0,0 );
-            model.rotateOnAxis( new THREE.Vector3(1,0,0), -Math.PI/2 );
+            model.quaternion.premultiply( modelRotation );
             model.castShadow = true;
             model.visible = false;
 
@@ -208,10 +208,12 @@ class App {
                     {   // export
                         let configurerJSON = this.configurer.exportJSON();
                         configurerJSON._comments = "All points are in mesh space (no matrices of any kind are applied)"
+                        configurerJSON.fingerAxes._comments = "Axes in mesh space. Quats = quats from where axes where computed (tpose). Thumb has a correction Thumb quat = qCorrection * qBind";
                         let json = { _comments: this.modelFileName, bodyController: configurerJSON };
 
                         let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent( JSON.stringify( json , (key,value)=>{
-                            if ( typeof( value ) == "number" ){ return Number( value.toFixed(6) ); }
+                            if ( value.isQuaternion ){ return { x:value.x, y:value.y, z:value.z, w:value.w } }
+                            else if ( typeof( value ) == "number" ){ return Number( value.toFixed(6) ); }
                             else{ return value; }
                         } ) );
                         let downloadAnchorNode = document.createElement('a');
@@ -221,6 +223,15 @@ class App {
                         downloadAnchorNode.click();
                         downloadAnchorNode.remove();
                     }
+
+                    case 71: //g
+                        this.configurer.skeleton.bones[ this.configurer.boneMap.LHandThumb ].quaternion.copy( this.configurer.fingerAxes.L.quats[0] );
+                        this.configurer.skeleton.bones[ this.configurer.boneMap.RHandThumb ].quaternion.copy( this.configurer.fingerAxes.R.quats[0] );
+                        this.skeletonVisible.bones[ this.configurer.boneMap.LHandThumb ].quaternion.copy( this.configurer.fingerAxes.L.quats[0] );
+                        this.skeletonVisible.bones[ this.configurer.boneMap.RHandThumb ].quaternion.copy( this.configurer.fingerAxes.R.quats[0] );
+                        break;
+                    case 72: // h
+                        this.configurerHelper.setVisibility( false );
                     default: break;
                 }
             });
