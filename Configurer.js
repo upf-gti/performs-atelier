@@ -284,29 +284,30 @@ class Configurer {
 
     computeFaceLocations(){        
         // directions are not in world nor in mesh coords. x*rightAxisMeshCoords, y*upAxisMeshCoords, z*frontAxisMeshCoords
+        // dx: delta to add in the direction X to move from sidell to siderr
         let faceLocations = { 
-            headtop:    { x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
-            forehead:   { x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
+            headtop:    { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
+            forehead:   { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
 
-            eyebrowsLine: { x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
-            eyebrowR:   { x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            eyebrowL:   { x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            eyesLine:   { x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            eyeR:       { x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            eyeL:       { x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            eyebrowsLine: { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
+            eyebrowR:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
+            eyebrowL:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
+            eyesLine:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            eyeR:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            eyeL:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
 
-            earR:       { x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            earL:       { x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
-            earlobeR:   { x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            earlobeL:   { x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
+            earR:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            earL:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
+            earlobeR:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            earlobeL:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
 
-            nose:       { x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
-            belownose:  { x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
-            cheekR:     { x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
-            cheekL:     { x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ) },
-            mouth:      { x: 0, y: 0, z: 1 },
-            chin:       { x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
-            underchin:  { x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
+            nose:       { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
+            belownose:  { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
+            cheekR:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
+            cheekL:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ) },
+            mouth:      { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1 },
+            chin:       { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
+            underchin:  { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
         }
         
         // compute front, up, right in scene world coordinates. Use root as the one defining the rotation difference from bind
@@ -317,7 +318,7 @@ class Configurer {
         let worldHeadPos = this.skeleton.bones[ this.boneMap[ "Head" ] ].getWorldPosition( new THREE.Vector3() );
         let worldDir = new THREE.Vector3(0,0,0); // direction for the ray
 
-        let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as body
+        let sides = [ "SideLL", "SideL", "", "SideR", "SideRR" ]; // same as body
         // position of bone and direction to sample. World space
         for( let f in faceLocations ){
             let color = Math.random() * 0xffffff;
@@ -328,7 +329,7 @@ class Configurer {
             worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
             worldDir.normalize();
 
-            let dirSidesXOffset = worldX.clone().multiplyScalar( Math.cos( 85 * Math.PI/180 ) );
+            let dirSidesXOffset = worldX.clone().multiplyScalar( localDir.dx );
             worldDir.add( dirSidesXOffset ).add( dirSidesXOffset ); // start at SideLL and iteratively go to SideRR
             
             for ( let i = 0; i < sides.length; ++i ){
@@ -357,7 +358,7 @@ class Configurer {
         let worldDir = new THREE.Vector3(0,0,0);
         let _tempV3_0 = new THREE.Vector3(0,0,0);
 
-        let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as face
+        let sides = [ "SideLL", "SideL", "", "SideR", "SideRR" ]; // same as face
         // position of bone and direction to sample. World space
         for( let b in bodyLocations ){
             let color = Math.random() * 0xffffff;
@@ -573,6 +574,9 @@ class Configurer {
         // [ bone assigned, position in mesh coordinates, direction in mesh coordinates ]
         let result = {};
         result.axes = [ this.rightAxisMeshCoords.clone(), this.upAxisMeshCoords.clone(), this.frontAxisMeshCoords.clone() ];
+
+        result.boneMap = JSON.parse( JSON.stringify( boneMap ) );
+
         result.bodyLocations = {};
         for ( let a in this.points.body ){
             let o = this.points.body[a];

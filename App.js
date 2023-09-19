@@ -112,6 +112,9 @@ class App {
         this.renderer.render( this.scene, this.camera );
         
         let filePath = './EvaLowTexturesV2Decimated.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
+        // let filePath = './eva_final_test.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
+        // let filePath = './eva_test_2.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
+        // let filePath = './Eva_Y.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './kevinRigBlender.glb'; let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         this.loaderGLB.load( filePath , (glb) => {
             let model = this.modelVisible = glb.scene;
@@ -222,16 +225,11 @@ class App {
                         document.body.appendChild(downloadAnchorNode); // required for firefox
                         downloadAnchorNode.click();
                         downloadAnchorNode.remove();
+                        break;
                     }
 
-                    case 71: //g
-                        this.configurer.skeleton.bones[ this.configurer.boneMap.LHandThumb ].quaternion.copy( this.configurer.fingerAxes.L.quats[0] );
-                        this.configurer.skeleton.bones[ this.configurer.boneMap.RHandThumb ].quaternion.copy( this.configurer.fingerAxes.R.quats[0] );
-                        this.skeletonVisible.bones[ this.configurer.boneMap.LHandThumb ].quaternion.copy( this.configurer.fingerAxes.L.quats[0] );
-                        this.skeletonVisible.bones[ this.configurer.boneMap.RHandThumb ].quaternion.copy( this.configurer.fingerAxes.R.quats[0] );
-                        break;
                     case 72: // h
-                        this.configurerHelper.setVisibility( false );
+                        this.configurerHelper.toggleVisibility( );
                     default: break;
                 }
             });
