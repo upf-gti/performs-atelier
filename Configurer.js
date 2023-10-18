@@ -286,28 +286,28 @@ class Configurer {
         // directions are not in world nor in mesh coords. x*rightAxisMeshCoords, y*upAxisMeshCoords, z*frontAxisMeshCoords
         // dx: delta to add in the direction X to move from sidell to siderr
         let faceLocations = { 
-            headtop:    { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
-            forehead:   { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
+            HEAD_TOP:    { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
+            FOREHEAD:   { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
 
-            eyebrowsLine: { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
-            eyebrowR:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            eyebrowL:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            eyesLine:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            eyeR:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            eyeL:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYEBROWS_LINE: { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
+            EYEBROW_RIGHT:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
+            EYEBROW_LEFT:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
+            EYES_LINE:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYE_RIGHT:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYE_LEFT:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
 
-            earR:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            earL:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
-            earlobeR:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            earlobeL:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
+            EAR_RIGHT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            EAR_LEFT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
+            EARLOBE_RIGHT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            EARLOBE_LEFT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
 
-            nose:       { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
-            belownose:  { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
-            cheekR:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
-            cheekL:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ) },
-            mouth:      { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1 },
-            chin:       { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
-            underchin:  { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
+            NOSE:       { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
+            BELOW_NOSE:  { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
+            CHEEK_RIGHT:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
+            CHEEK_LEFT:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ) },
+            MOUTH:      { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1 },
+            CHIN:       { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
+            UNDER_CHIN:  { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
         }
         
         // compute front, up, right in scene world coordinates. Use root as the one defining the rotation difference from bind
@@ -318,7 +318,7 @@ class Configurer {
         let worldHeadPos = this.skeleton.bones[ this.boneMap[ "Head" ] ].getWorldPosition( new THREE.Vector3() );
         let worldDir = new THREE.Vector3(0,0,0); // direction for the ray
 
-        let sides = [ "SideLL", "SideL", "", "SideR", "SideRR" ]; // same as body
+        let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as body
         // position of bone and direction to sample. World space
         for( let f in faceLocations ){
             let color = Math.random() * 0xffffff;
@@ -342,23 +342,23 @@ class Configurer {
 
     computeBodyLocations(){      
         let bodyLocations ={ // firs in array is the bone target. Rest of bones define the location (Average)
-            "head": { tgBone: "Head", pos: [ "Head" ] },
-            "neck": { tgBone: "Neck", pos: [ "Neck", "Neck", "Head" ] },
-            "shoulderTop": { tgBone: "ShouldersUnion", pos: [ "LShoulder", "RShoulder", "Neck" ] },
-            "shoulderLine": { tgBone: "ShouldersUnion", pos: [ "LShoulder", "RShoulder", "ShouldersUnion" ] },
-            "shoulderL": { tgBone: "ShouldersUnion", pos: [ "LArm" ] },
-            "shoulderR": { tgBone: "ShouldersUnion", pos: [ "RArm" ] },
-            "chest": { tgBone: "ShouldersUnion", pos: [ "ShouldersUnion" ] },
-            "stomach": { tgBone: "Stomach", pos: [ "Stomach" ] },
-            "belowstomach": { tgBone: "BelowStomach", pos: [ "BelowStomach" ] },
-            "neutral": { tgBone: "Hips", pos: [ "Hips" ] }
+            HEAD:         { tgBone: "Head", pos: [ "Head" ] },
+            NECK:         { tgBone: "Neck", pos: [ "Neck", "Neck", "Head" ] },
+            SHOULDER_TOP:  { tgBone: "ShouldersUnion", pos: [ "LShoulder", "RShoulder", "Neck" ] },
+            SHOULDER_LINE: { tgBone: "ShouldersUnion", pos: [ "LShoulder", "RShoulder", "ShouldersUnion" ] },
+            SHOULDER_LEFT:    { tgBone: "ShouldersUnion", pos: [ "LArm" ] },
+            SHOULDER_RIGHT:    { tgBone: "ShouldersUnion", pos: [ "RArm" ] },
+            CHEST:        { tgBone: "ShouldersUnion", pos: [ "ShouldersUnion" ] },
+            STOMACH:      { tgBone: "Stomach", pos: [ "Stomach" ] },
+            BELOW_STOMACH: { tgBone: "BelowStomach", pos: [ "BelowStomach" ] },
+            NEUTRAL:      { tgBone: "Hips", pos: [ "Hips" ] }
         }
         
         let worldPos = new THREE.Vector3(0,0,0);
         let worldDir = new THREE.Vector3(0,0,0);
         let _tempV3_0 = new THREE.Vector3(0,0,0);
 
-        let sides = [ "SideLL", "SideL", "", "SideR", "SideRR" ]; // same as face
+        let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as face
         // position of bone and direction to sample. World space
         for( let b in bodyLocations ){
             let color = Math.random() * 0xffffff;
@@ -391,26 +391,26 @@ class Configurer {
         // directions are not in world nor in mesh coords. x*rightAxisMeshCoords, y*upAxisMeshCoords, z*frontAxisMeshCoords
         // assuming arms in t-pose and hands more less in t-pose + palm looking down
         let armLocations = {
-            Hand: {
+            HAND: {
                 tgBone: "Wrist", pos: [ "Wrist", "HandMiddle", "HandMiddle" ],
                 dir: { Radial: { x:0, y:0, z:1 }, Ulnar: { x:0, y:0, z:-1 }, Back: { x:0, y:1, z:0 }, Palmar: { x:0, y:-1, z:0 } }
             },
-            Wrist: {
+            WRIST: {
                 tgBone: "Wrist", pos: [ "Wrist" ],
                 dir: { Radial: { x:0, y:0, z:1 }, Ulnar: { x:0, y:0, z:-1 }, Back: { x:0, y:1, z:0 }, Palmar: { x:0, y:-1, z:0 } }
             },
-            Forearm: {
+            FOREARM: {
                 tgBone: "Elbow", pos: [ "Wrist", "Elbow" ],
                 dir: { Radial: { x:0, y:0, z:1 }, Ulnar: { x:0, y:0, z:-1 }, Back: { x:0, y:1, z:0 }, Palmar: { x:0, y:-1, z:0 } }
             },
-            Elbow: {
+            ELBOW: {
                 tgBone: "Arm",   pos: [ "Elbow" ],
                 dir: { 
                     Left: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
                     Right: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
                     Back: { x:0, y:-1, z:0 }, Front: { x:0, y:1, z:0 } }
             },
-            Upperarm: {
+            UPPER_ARM: {
                 tgBone: "Arm",   pos: [ "Elbow", "Arm" ],
                 dir: { 
                     Left: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
@@ -449,7 +449,7 @@ class Configurer {
                 worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
                 worldDir.normalize();
 
-                this.createHandPoint( isLeft, l + d, boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color );
+                this.createHandPoint( isLeft, l + "_" + d, boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color );
             }
         }
     }
@@ -474,22 +474,22 @@ class Configurer {
             color = Math.random() * 0xffffff;
             this.skeleton.bones[ fingerbases[i] ].getWorldPosition( worldPos );            
             let boneName = this.skeleton.bones[ fingerbases[i] ].name;
-            this.createHandPoint( isLeft, (i+2) + "BaseBack", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "BasePalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_BASE_BACK", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_BASE_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
             
             this.skeleton.bones[ fingerbases[i]+1 ].getWorldPosition(_tempV3_0 );
             worldPos.lerpVectors( worldPos, _tempV3_0, 0.5 );
-            this.createHandPoint( isLeft, (i+2) + "BaseRadial", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "BaseUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_BASE_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_BASE_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
           
             // mid finger
             color = Math.random() * 0xffffff;
             this.skeleton.bones[ fingerbases[i]+1 ].getWorldPosition( worldPos );            
             boneName = this.skeleton.bones[ fingerbases[i]+1 ].name;
-            this.createHandPoint( isLeft, (i+2) + "MidBack", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "MidPalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "MidRadial", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "MidUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_MID_BACK", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_MID_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_MID_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_MID_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
             
             // PAD
             color = Math.random() * 0xffffff;
@@ -497,23 +497,23 @@ class Configurer {
             this.skeleton.bones[ fingerbases[i]+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
             worldPos.lerpVectors( worldPos, _tempV3_0, 0.5 );
             boneName = this.skeleton.bones[ fingerbases[i]+2 ].name;
-            this.createHandPoint( isLeft, (i+2) + "PadBack", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "PadPalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "PadRadial", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
-            this.createHandPoint( isLeft, (i+2) + "PadUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_PAD_BACK", boneName, worldPos, this.doRaycast( worldPos, worldY, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_PAD_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldY ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_PAD_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldZ, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_PAD_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( worldZ ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
            
             //Tip
             this.skeleton.bones[ fingerbases[i]+2 ].getWorldPosition( worldPos );            
             this.skeleton.bones[ fingerbases[i]+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
             worldDir.subVectors(  _tempV3_0, worldPos ).normalize();
             boneName = this.skeleton.bones[ fingerbases[i]+2 ].name;
-            this.createHandPoint( isLeft, (i+2) + "Tip", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+            this.createHandPoint( isLeft, (i+2) + "_TIP", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
         }
 
 
         // Thumb
         let thumbidx = this.boneMap[ (isLeft?"L":"R") + "HandThumb"];
-        let s = [ "1Base", "1Mid", "1Pad"];
+        let s = [ "1_BASE", "1_MID", "1_PAD"];
         for ( let i = 0; i < 3; ++i){ 
             color = Math.random() * 0xffffff;
             let boneName = this.skeleton.bones[ thumbidx + i ].name;
@@ -521,16 +521,16 @@ class Configurer {
             this.skeleton.bones[ thumbidx + i + 1 ].getWorldPosition( _tempV3_0 );            
             _tempV3_0.subVectors( _tempV3_0, worldPos ).normalize();
             worldDir.crossVectors( _tempV3_0, worldZ ).normalize();
-            this.createHandPoint( isLeft, s[i] + "Ulnar", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballUlnar", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
-            this.createHandPoint( isLeft, s[i] + "Radial", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballRadial", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+            if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
         
             worldDir.crossVectors( worldDir, _tempV3_0 ).normalize();
-            this.createHandPoint( isLeft, s[i] + "Back", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballBack", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
-            this.createHandPoint( isLeft, s[i] + "Palmar", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
-            if ( s[i] == "1Base" ) { this.createHandPoint( isLeft, "ThumbballPalmar", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "_BACK", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+            if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_BACK", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
+            this.createHandPoint( isLeft, s[i] + "_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
         }
         
         // thumb Tip
@@ -538,7 +538,7 @@ class Configurer {
         this.skeleton.bones[ thumbidx+3 ].getWorldPosition( _tempV3_0 ); // bone on tip of finger
         worldDir.subVectors(  _tempV3_0, worldPos ).normalize();
         let boneName = this.skeleton.bones[ thumbidx+2 ].name;
-        this.createHandPoint( isLeft, "1Tip", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
+        this.createHandPoint( isLeft, "1_TIP", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
     }
 
 
@@ -574,6 +574,11 @@ class Configurer {
         // [ bone assigned, position in mesh coordinates, direction in mesh coordinates ]
         let result = {};
         result.axes = [ this.rightAxisMeshCoords.clone(), this.upAxisMeshCoords.clone(), this.frontAxisMeshCoords.clone() ];
+
+        result._commentsDefaultAngles = "elbow added. shoulder=[ added angle, min angle (<0), max angle (>0) ]",
+		result.elbowRaise = 0;
+		result.shoulderRaise = [ 0, 0, 45 ],
+		result.shoulderHunch = [ 0, 0, 40 ],
 
         result.boneMap = JSON.parse( JSON.stringify( boneMap ) );
 
