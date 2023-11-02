@@ -286,28 +286,28 @@ class Configurer {
         // directions are not in world nor in mesh coords. x*rightAxisMeshCoords, y*upAxisMeshCoords, z*frontAxisMeshCoords
         // dx: delta to add in the direction X to move from sidell to siderr
         let faceLocations = { 
-            HEAD_TOP:    { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
-            FOREHEAD:   { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
+            HEAD_TOP:       { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
+            FOREHEAD:       { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
 
-            EYEBROWS_LINE: { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
-            EYEBROW_RIGHT:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            EYEBROW_LEFT:     { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            EYES_LINE:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            EYE_RIGHT:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            EYE_LEFT:         { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYEBROWS_LINE:  { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
+            EYEBROW_RIGHT:  { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
+            EYEBROW_LEFT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
+            EYES_LINE:      { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYE_RIGHT:      { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYE_LEFT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
 
-            EAR_RIGHT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            EAR_RIGHT:      { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
             EAR_LEFT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
-            EARLOBE_RIGHT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
+            EARLOBE_RIGHT:  { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
             EARLOBE_LEFT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
 
-            NOSE:       { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
-            BELOW_NOSE:  { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
-            CHEEK_RIGHT:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
+            NOSE:           { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
+            BELOW_NOSE:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
+            CHEEK_RIGHT:    { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
             CHEEK_LEFT:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ) },
-            MOUTH:      { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1 },
-            CHIN:       { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
-            UNDER_CHIN:  { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
+            MOUTH:          { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1 },
+            CHIN:           { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
+            UNDER_CHIN:     { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
         }
         
         // compute front, up, right in scene world coordinates. Use root as the one defining the rotation difference from bind
@@ -393,29 +393,29 @@ class Configurer {
         let armLocations = {
             HAND: {
                 tgBone: "Wrist", pos: [ "Wrist", "HandMiddle", "HandMiddle" ],
-                dir: { Radial: { x:0, y:0, z:1 }, Ulnar: { x:0, y:0, z:-1 }, Back: { x:0, y:1, z:0 }, Palmar: { x:0, y:-1, z:0 } }
+                dir: { RADIAL: { x:0, y:0, z:1 }, ULNAR: { x:0, y:0, z:-1 }, BACK: { x:0, y:1, z:0 }, PALMAR: { x:0, y:-1, z:0 } }
             },
             WRIST: {
                 tgBone: "Wrist", pos: [ "Wrist" ],
-                dir: { Radial: { x:0, y:0, z:1 }, Ulnar: { x:0, y:0, z:-1 }, Back: { x:0, y:1, z:0 }, Palmar: { x:0, y:-1, z:0 } }
+                dir: { RADIAL: { x:0, y:0, z:1 }, ULNAR: { x:0, y:0, z:-1 }, BACK: { x:0, y:1, z:0 }, PALMAR: { x:0, y:-1, z:0 } }
             },
             FOREARM: {
                 tgBone: "Elbow", pos: [ "Wrist", "Elbow" ],
-                dir: { Radial: { x:0, y:0, z:1 }, Ulnar: { x:0, y:0, z:-1 }, Back: { x:0, y:1, z:0 }, Palmar: { x:0, y:-1, z:0 } }
+                dir: { RADIAL: { x:0, y:0, z:1 }, ULNAR: { x:0, y:0, z:-1 }, BACK: { x:0, y:1, z:0 }, PALMAR: { x:0, y:-1, z:0 } }
             },
             ELBOW: {
                 tgBone: "Arm",   pos: [ "Elbow" ],
                 dir: { 
-                    Left: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
-                    Right: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
-                    Back: { x:0, y:-1, z:0 }, Front: { x:0, y:1, z:0 } }
+                    LEFT: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
+                    RIGHT: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
+                    BACK: { x:0, y:-1, z:0 }, FRONT: { x:0, y:1, z:0 } }
             },
             UPPER_ARM: {
                 tgBone: "Arm",   pos: [ "Elbow", "Arm" ],
                 dir: { 
-                    Left: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
-                    Right: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
-                    Back: { x:0, y:-1, z:0 }, Front: { x:0, y:1, z:0 } }
+                    LEFT: { x:0, y:0, z: ( isLeft? -1 : 1 ) }, // different for left hand
+                    RIGHT: { x:0, y:0, z: ( isLeft? 1 : -1 ) }, // different for left hand
+                    BACK: { x:0, y:-1, z:0 }, FRONT: { x:0, y:1, z:0 } }
             }
         }
         
