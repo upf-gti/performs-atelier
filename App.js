@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Configurer, ConfigurerHelper } from './Configurer.js';
-
+import { AppGUI } from './GUI.js';
+import { AUConfigurer } from './AUConfigurer.js';
 
 // Correct negative blenshapes shader of ThreeJS
 THREE.ShaderChunk[ 'morphnormal_vertex' ] = "#ifdef USE_MORPHNORMALS\n	objectNormal *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n	    objectNormal += getMorph( gl_VertexID, i, 1, 2 ) * morphTargetInfluences[ i ];\n		}\n	#else\n		objectNormal += morphNormal0 * morphTargetInfluences[ 0 ];\n		objectNormal += morphNormal1 * morphTargetInfluences[ 1 ];\n		objectNormal += morphNormal2 * morphTargetInfluences[ 2 ];\n		objectNormal += morphNormal3 * morphTargetInfluences[ 3 ];\n	#endif\n#endif";
@@ -12,6 +13,7 @@ THREE.ShaderChunk[ 'morphtarget_vertex' ] = "#ifdef USE_MORPHTARGETS\n	transform
 
 class App {
 
+    static _C_MODES = { BODY: 0, IK: 1, AU: 2 }; // configure modes
     constructor() {
         
         this.fps = 0;
@@ -29,18 +31,12 @@ class App {
         this.modelVisible = null;
 
         this.configurer = null;
+        this.facial_configurer = null;
         this.configurerHelper = null;
+        this.skeletonhelper = null;
     }
 
-    init() {
-            
-
-        this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color( 0xa0a0a0 );
-        // const gridHelper = new THREE.GridHelper( 10, 10 );
-        // gridHelper.position.set(0,0.001,0);
-        // this.scene.add( gridHelper );
-                        
+    init() {          
         // renderer
         this.renderer = new THREE.WebGLRenderer( { antialias: true } );
         this.renderer.setPixelRatio( window.devicePixelRatio );
@@ -49,7 +45,14 @@ class App {
         this.renderer.gammaInput = true; // applies degamma to textures ( not applied to material.color and roughness, metalnes, etc. Only to colour textures )
         this.renderer.gammaOutput = true; // applies gamma after all lighting operations ( which are done in linear space )
         this.renderer.shadowMap.enabled = false;
+        this.renderer.domElement.id = "canvas";
         document.body.appendChild( this.renderer.domElement );
+
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color( 0xa0a0a0 );
+        // const gridHelper = new THREE.GridHelper( 10, 10 );
+        // gridHelper.position.set(0,0.001,0);
+        // this.scene.add( gridHelper );
 
         // camera
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.01, 1000);
@@ -108,13 +111,14 @@ class App {
         backPlane.receiveShadow = true;
         this.scene.add( backPlane );
 
+                
         // so the screen is not black while loading
         this.renderer.render( this.scene, this.camera );
-        
+
         let filePath = './EvaLowTexturesV2Decimated.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
         // let filePath = './camila_test.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './merged_scaledglb.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        // let filePath = './kevin_finished_first_test_7.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
+        // let filePath = './data/kevin_finished_first_test_7.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './Eva_Y.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './kevinRigBlender.glb'; let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         this.loaderGLB.load( filePath , (glb) => {
@@ -139,7 +143,7 @@ class App {
                 }
             } );
             this.skeletonVisible = skeleton;
-            model.position.set( 1,0,0 );
+            model.position.set( 0,0,0 );
             model.quaternion.premultiply( modelRotation );
             model.castShadow = true;
 
@@ -172,7 +176,7 @@ class App {
                     object.quaternion.set(0,0,0,1);
                 }
             } );
-            model.position.set( 1,0,0 );
+            model.position.set( 0,0,0 );
             model.quaternion.premultiply( modelRotation );
             model.castShadow = true;
             model.visible = false;
@@ -181,15 +185,17 @@ class App {
             let skeletonhelper = new THREE.SkeletonHelper( this.skeleton.bones[0] ); 
             skeletonhelper.frustumCulled = false;
             this.scene.add( skeletonhelper );
+            this.skeletonhelper = skeletonhelper;
 
             this.skeleton.pose();
             this.configurer = new Configurer( this.skeleton, this.model1, this.scene );
             this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera, this.renderer.domElement );
             this.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
+            this.facial_configurer = new AUConfigurer(this.modelVisible, this.scene);
 
-            window.addEventListener( "pointermove", (e)=>{
-                this.configurerHelper.mouse.x = ( e.clientX / window.innerWidth ) * 2 - 1;
-                this.configurerHelper.mouse.y = - ( e.clientY / window.innerHeight ) * 2 + 1;
+            this.renderer.domElement.addEventListener( "pointermove", (e)=>{
+                this.configurerHelper.mouse.x = ( e.offsetX / this.renderer.domElement.width ) * 2 - 1;
+                this.configurerHelper.mouse.y = - ( e.offsetY / this.renderer.domElement.height ) * 2 + 1;
             });
             window.addEventListener( "keyup", (e)=>{
                 switch( e.which ){
@@ -207,13 +213,14 @@ class App {
                         break;
                     case 70: // f
                         this.configurerHelper.toggleFreezeEdit( 2 );
-
+                        break;
                     case 69: // e
                     {   // export
                         let configurerJSON = this.configurer.exportJSON();
                         configurerJSON._comments = "All points are in mesh space (no matrices of any kind are applied)"
                         configurerJSON.fingerAxes._comments = "Axes in mesh space. Quats = quats from where axes where computed (tpose). Thumb has a correction Thumb quat = qCorrection * qBind";
-                        let json = { _comments: this.modelFileName, bodyController: configurerJSON };
+                        let facial_configurerJSON = this.facial_configurer.exportJSON();
+                        let json = { _comments: this.modelFileName, bodyController: configurerJSON, facialController: facial_configurerJSON };
 
                         let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent( JSON.stringify( json , (key,value)=>{
                             if ( value.isQuaternion ){ return { x:value.x, y:value.y, z:value.z, w:value.w } }
@@ -228,7 +235,6 @@ class App {
                         downloadAnchorNode.remove();
                         break;
                     }
-
                     case 72: // h
                         this.configurerHelper.toggleVisibility( );
                     default: break;
@@ -246,15 +252,15 @@ class App {
                     }
                 }
             });
+            if ( typeof AppGUI != "undefined" ) { this.gui = new AppGUI( this ); }
             this.animate();
             $('#loading').fadeOut(); //hide();
+            
         });
-       
 
+        // window.addEventListener( 'resize', ()=>{ this.onResize( this.renderer.domElement.width, this.renderer.domElement.height) });
+        this.renderer.domElement.addEventListener( 'resize', this.onResize.bind( this ) );
         
-
-        window.addEventListener( 'resize', this.onWindowResize.bind(this) );
-
     }
 
     animate() {
@@ -276,18 +282,17 @@ class App {
 
     }
     
-    onWindowResize() {
+    onResize() {
 
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.aspect = this.renderer.domElement.width / this.renderer.domElement.height;
         this.camera.updateProjectionMatrix();
+        this.renderer.setViewport(0, 0, this.renderer.domElement.width, this.renderer.domElement.height);
 
-        this.renderer.setSize( window.innerWidth, window.innerHeight );
     }
 
 }
 
-
 let app = new App();
 app.init();
 window.global = {app:app};
-export { app };
+export { app, App };
