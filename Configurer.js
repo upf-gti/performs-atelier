@@ -334,7 +334,8 @@ class Configurer {
             
             for ( let i = 0; i < sides.length; ++i ){
                 // need to subtract worldY from direction. Only X-Z plane is desired. sphericalToEllipsoidal already does this.
-                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
+                // this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
+                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), worldDir.clone().set(worldDir.x,0,worldDir.z).normalize(), color ); //this.sphericalToEllipsoidal( worldDir ), color );
                 worldDir.sub( dirSidesXOffset );
             }
         }
@@ -449,7 +450,7 @@ class Configurer {
                 worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
                 worldDir.normalize();
 
-                this.createHandPoint( isLeft, l + "_" + d, boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color );
+                this.createHandPoint( isLeft, l + "_" + d, boneName, worldPos, this.doRaycast( worldPos, worldDir, true ), color );
             }
         }
     }
