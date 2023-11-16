@@ -2,35 +2,6 @@ import * as THREE from "three"
 import { disposeObjectSafeThreejs, findIndexOfBone, objectConcat } from "./Utils.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 
-
-
-let boneMap = {
-    "Head":           "mixamorig_Head",
-    "Neck":           "mixamorig_Neck",
-    "ShouldersUnion": "mixamorig_Spine2", // aka chest
-    "Stomach":  	  "mixamorig_Spine1",
-    "BelowStomach":   "mixamorig_Spine",
-    "Hips":			  "mixamorig_Hips",
-    "RShoulder":      "mixamorig_RightShoulder",
-    "RArm":           "mixamorig_RightArm",
-    "RElbow":         "mixamorig_RightForeArm",
-    "RWrist":         "mixamorig_RightHand",
-    "RHandThumb":     "mixamorig_RightHandThumb1",
-    "RHandIndex":     "mixamorig_RightHandIndex1",
-    "RHandMiddle":    "mixamorig_RightHandMiddle1",
-    "RHandRing":      "mixamorig_RightHandRing1",
-    "RHandPinky":     "mixamorig_RightHandPinky1",
-    "LShoulder":      "mixamorig_LeftShoulder",
-    "LArm":           "mixamorig_LeftArm",
-    "LElbow":         "mixamorig_LeftForeArm",
-    "LWrist":         "mixamorig_LeftHand",
-    "LHandThumb":     "mixamorig_LeftHandThumb1",
-    "LHandIndex":     "mixamorig_LeftHandIndex1",
-    "LHandMiddle":    "mixamorig_LeftHandMiddle1",
-    "LHandRing":      "mixamorig_LeftHandRing1",
-    "LHandPinky":     "mixamorig_LeftHandPinky1"
-}
-
 class Configurer {
     constructor( skeleton, model, scene ){
         this.model = model;
@@ -38,11 +9,6 @@ class Configurer {
         this.skeleton.pose(); // set on bind pose
         this.skeleton.bones[0].updateWorldMatrix( true, true ); // parents and children also
         this.scene = scene; scene.updateWorldMatrix( true, true );
-
-        this.boneMap = {};
-        for( let b in boneMap ){
-            this.boneMap[b] = findIndexOfBone( this.skeleton, boneMap[b] );
-        }
 
         this.frontAxisMeshCoords = new THREE.Vector3();
         this.upAxisMeshCoords = new THREE.Vector3();
@@ -66,6 +32,15 @@ class Configurer {
             handL: [],
             handR: [],
         };
+
+    }
+    
+    setBoneMap(boneMap) {
+
+        this.boneMap = {};
+        for( let b in boneMap ){
+            this.boneMap[b] = findIndexOfBone( this.skeleton, boneMap[b] );
+        }
 
         this.computeAxes();
         this.computeConfig();
@@ -570,7 +545,7 @@ class Configurer {
         return null;
     }
 
-    exportJSON(){
+    exportJSON(boneMap){
         // [ bone assigned, position in mesh coordinates, direction in mesh coordinates ]
         let result = {};
         result.axes = [ this.rightAxisMeshCoords.clone(), this.upAxisMeshCoords.clone(), this.frontAxisMeshCoords.clone() ];

@@ -30,6 +30,15 @@ class App {
         this.model1 = null;
         this.modelVisible = null;
 
+        this.boneMap = {
+            "Head": null, "Neck": null, "ShouldersUnion": null, "Stomach": null,
+            "BelowStomach": null, "Hips": null, "RShoulder": null, "RArm": null,
+            "RElbow": null, "RWrist": null, "RHandThumb": null, "RHandIndex": null,
+            "RHandMiddle": null, "RHandRing": null, "RHandPinky": null, "LShoulder": null,
+            "LArm": null, "LElbow": null, "LWrist": null, "LHandThumb": null, "LHandIndex": null,
+            "LHandMiddle": null, "LHandRing": null, "LHandPinky": null
+       };
+
         this.configurer = null;
         this.facial_configurer = null;
         this.configurerHelper = null;
@@ -111,47 +120,18 @@ class App {
         backPlane.receiveShadow = true;
         this.scene.add( backPlane );
 
-                
         // so the screen is not black while loading
         this.renderer.render( this.scene, this.camera );
 
         let filePath = './EvaLowTexturesV2Decimated.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
         // let filePath = './camila_test.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './merged_scaledglb.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        // let filePath = './data/kevin_finished_first_test_7.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
+        // let filePath = '../signon/data/kevin_finished_first_test_7.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './Eva_Y.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         // let filePath = './kevinRigBlender.glb'; let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        this.loaderGLB.load( filePath , (glb) => {
-            let model = this.modelVisible = glb.scene;
-            let skeleton = null;
-            model.traverse( (object) => {
-                if ( object.isMesh || object.isSkinnedMesh ) {
-                    if ( object.isSkinnedMesh ){ skeleton = object.skeleton; }
-                    object.material.side = THREE.DoubleSide; //needed for raycaster
-                    object.frustumCulled = false;
-                    object.castShadow = true;
-                    object.receiveShadow = true;
-                    if(object.material.map) 
-                        object.material.map.anisotropy = 16;
-                } 
-                if (object.isBone) {
-                    object.scale.set(1.0, 1.0, 1.0);
-                }else{
-                    object.scale.set(1.0, 1.0, 1.0);
-                    object.quaternion.set(0,0,0,1);
-                    object.position.set(0,0,0);
-                }
-            } );
-            this.skeletonVisible = skeleton;
-            model.position.set( 0,0,0 );
-            model.quaternion.premultiply( modelRotation );
-            model.castShadow = true;
+        this.loadVisibleModel(filePath, modelRotation);
 
-            this.scene.add(model);
-            // this.scene.add( new THREE.SkeletonHelper( model ) );
-
-            skeleton.pose();
-        })
+        // this.loadConfigModel(filePath, modelRotation);
 
         this.loaderGLB.load( filePath , (glb) => {
             let model = this.model1 = glb.scene;
@@ -189,54 +169,22 @@ class App {
 
             this.skeleton.pose();
             this.configurer = new Configurer( this.skeleton, this.model1, this.scene );
-            this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera, this.renderer.domElement );
-            this.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
+            // this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera, this.renderer.domElement );
+            // this.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
             this.facial_configurer = new AUConfigurer(this.modelVisible, this.scene);
+    
+            this.autoMapBones(null);
 
-            this.renderer.domElement.addEventListener( "pointermove", (e)=>{
-                this.configurerHelper.mouse.x = ( e.offsetX / this.renderer.domElement.width ) * 2 - 1;
-                this.configurerHelper.mouse.y = - ( e.offsetY / this.renderer.domElement.height ) * 2 + 1;
-            });
             window.addEventListener( "keyup", (e)=>{
                 switch( e.which ){
                     case 27: // escape
                         if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){ this.configurerHelper.cancelEdit(); } 
                         break;
-                    case 49: // 1
-                        this.configurerHelper.setEditMode( 0 ); 
-                        break;
-                    case 50: // 2
-                        this.configurerHelper.setEditMode( 1 );
-                        break;
-                    case 51: // 3
-                        this.configurerHelper.setEditMode( 2 );
-                        break;
                     case 70: // f
-                        this.configurerHelper.toggleFreezeEdit( 2 );
+                    if ( e.shiftKey ) this.configurerHelper.toggleFreezeEdit( 2 );
                         break;
-                    case 69: // e
-                    {   // export
-                        let configurerJSON = this.configurer.exportJSON();
-                        configurerJSON._comments = "All points are in mesh space (no matrices of any kind are applied)"
-                        configurerJSON.fingerAxes._comments = "Axes in mesh space. Quats = quats from where axes where computed (tpose). Thumb has a correction Thumb quat = qCorrection * qBind";
-                        let facial_configurerJSON = this.facial_configurer.exportJSON();
-                        let json = { _comments: this.modelFileName, bodyController: configurerJSON, facialController: facial_configurerJSON };
-
-                        let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent( JSON.stringify( json , (key,value)=>{
-                            if ( value.isQuaternion ){ return { x:value.x, y:value.y, z:value.z, w:value.w } }
-                            else if ( typeof( value ) == "number" ){ return Number( value.toFixed(6) ); }
-                            else{ return value; }
-                        } ) );
-                        let downloadAnchorNode = document.createElement('a');
-                        downloadAnchorNode.setAttribute("href", dataStr);
-                        downloadAnchorNode.setAttribute("download", "config.json" );
-                        document.body.appendChild(downloadAnchorNode); // required for firefox
-                        downloadAnchorNode.click();
-                        downloadAnchorNode.remove();
-                        break;
-                    }
                     case 72: // h
-                        this.configurerHelper.toggleVisibility( );
+                        if ( e.shiftKey ) this.configurerHelper.toggleVisibility( ); break;
                     default: break;
                 }
             });
@@ -258,7 +206,7 @@ class App {
             
         });
 
-        // window.addEventListener( 'resize', ()=>{ this.onResize( this.renderer.domElement.width, this.renderer.domElement.height) });
+        // window.addEventListener( 'resize', this.onResize.bind( this ) );
         this.renderer.domElement.addEventListener( 'resize', this.onResize.bind( this ) );
         
     }
@@ -276,18 +224,93 @@ class App {
         this.elapsedTime += delta;
 
         
-        this.configurerHelper.update();
+        if (this.configurerHelper) this.configurerHelper.update();
 
         this.renderer.render( this.scene, this.camera );
 
     }
     
     onResize() {
-
         this.camera.aspect = this.renderer.domElement.width / this.renderer.domElement.height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setViewport(0, 0, this.renderer.domElement.width, this.renderer.domElement.height);
+        this.renderer.setSize(this.renderer.domElement.width, this.renderer.domElement.height, false);
+    }
 
+    loadVisibleModel(filePath, modelRotation) {
+        this.loaderGLB.load( filePath , (glb) => {
+            let model = this.modelVisible = glb.scene;
+            let skeleton = null;
+            model.traverse( (object) => {
+                if ( object.isMesh || object.isSkinnedMesh ) {
+                    if ( object.isSkinnedMesh ){ skeleton = object.skeleton; }
+                    object.material.side = THREE.DoubleSide; //needed for raycaster
+                    object.frustumCulled = false;
+                    object.castShadow = true;
+                    object.receiveShadow = true;
+                    if(object.material.map) 
+                        object.material.map.anisotropy = 16;
+                } 
+                if (object.isBone) {
+                    object.scale.set(1.0, 1.0, 1.0);
+                }else{
+                    object.scale.set(1.0, 1.0, 1.0);
+                    object.quaternion.set(0,0,0,1);
+                    object.position.set(0,0,0);
+                }
+            } );
+            this.skeletonVisible = skeleton;
+            model.position.set( 0,0,0 );
+            model.quaternion.premultiply( modelRotation );
+            model.castShadow = true;
+
+            this.scene.add(model);
+            // this.scene.add( new THREE.SkeletonHelper( model ) );
+
+            skeleton.pose();
+        })
+    }
+
+    autoMapBones(boneMap) {
+        
+        boneMap = {
+            "Head":           "head",
+            "Neck":           "neck",
+            "ShouldersUnion": "spine2", // aka chest
+            "Stomach":  	  "spine1",
+            "BelowStomach":   "spine",
+            "Hips":			  "hips",
+            "RShoulder":      "rightshoulder",
+            "RArm":           "rightarm",
+            "RElbow":         "rightforearm",
+            "RHandThumb":     "righthandthumb1",
+            "RHandIndex":     "righthandindex1",
+            "RHandMiddle":    "righthandmiddle1",
+            "RHandRing":      "righthandring1",
+            "RHandPinky":     "righthandpinky1",
+            "RWrist":         "righthand",
+            "LShoulder":      "leftshoulder",
+            "LArm":           "leftarm",
+            "LElbow":         "leftforearm",
+            "LHandThumb":     "lefthandthumb1",
+            "LHandIndex":     "lefthandindex1",
+            "LHandMiddle":    "lefthandmiddle1",
+            "LHandRing":      "lefthandring1",
+            "LHandPinky":     "lefthandpinky1",
+            "LWrist":         "lefthand"
+        };
+
+        
+        this.bones = [];
+        this.skeleton.bones.forEach((obj) => { this.bones.push(obj.name); }); // get bone names of avatar
+
+        for (let i = 0; i < this.bones.length; i++) {
+            for (const bone in boneMap) {
+                if ( this.bones[i].toLocaleLowerCase().includes( boneMap[bone] ) ) {
+                    this.boneMap[bone] = this.bones[i];
+                    break;
+                }
+            }
+        }
     }
 
 }
