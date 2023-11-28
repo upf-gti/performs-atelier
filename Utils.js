@@ -134,10 +134,11 @@ function disposeObjectSafeThreejs( obj ){
 // Skeleton
 
 // O(n)
-function findIndexOfBone( skeleton, name ){
+function findIndexOfBone( skeleton, bone ){
+    if ( !bone ){ return -1;}
     let b = skeleton.bones;
     for( let i = 0; i < b.length; ++i ){
-        if ( b[i].name == name ){ return i; }
+        if ( b[i] == bone ){ return i; }
     }
     return -1;
 }
@@ -150,4 +151,48 @@ function objectConcat( objectReceptor, objectGiver ){
     return objectReceptor
 }
 
-export { quadraticBezierVec3, cubicBezierVec3,  mirrorQuat, mirrorQuatSelf, nlerpQuats, getTwistSwingQuaternions, getTwistQuaternion,  directionStringSymmetry, stringToDirection,  disposeObjectSafeThreejs, findIndexOfBone, objectConcat }
+
+// O(nm)
+function findIndexOfBoneByName( skeleton, name ){
+    if ( !name ){ return -1; }
+    let b = skeleton.bones;
+    for( let i = 0; i < b.length; ++i ){
+        if ( b[i].name == name ){ return i; }
+    }
+    return -1;
+}
+
+function getBindQuaternion( skeleton, boneIdx, outQuat ){
+    let m1 = skeleton.boneInverses[ boneIdx ].clone().invert(); 
+    let parentIdx = findIndexOfBone( skeleton, skeleton.bones[ boneIdx ].parent );
+    if ( parentIdx > -1 ){
+        let m2 = skeleton.boneInverses[ parentIdx ]; 
+        m1.premultiply(m2);
+    }
+    outQuat.setFromRotationMatrix( m1 ).normalize();
+    return outQuat;
+}
+
+// sets bind quaternions only. Warning: Not the best function to call every frame.
+function forceBindPoseQuats( skeleton, skipRoot = false ){
+    let bones = skeleton.bones;
+    let inverses = skeleton.boneInverses;
+    if ( inverses.length < 1 ){ return; }
+    let boneMat = inverses[0].clone(); // to avoid including ThreeJS and new THREE.Matrix4()
+    for( let i = 0; i < bones.length; ++i ){
+        boneMat.copy( inverses[i] ); // World to Local
+        boneMat.invert(); // Local to World
+
+        // get only the local matrix of the bone (root should not need any change)
+        let parentIdx = findIndexOfBone( skeleton, bones[i].parent );
+        if ( parentIdx > -1 ){ boneMat.premultiply( inverses[ parentIdx ] ); }
+        else{
+            if ( skipRoot ){ continue; }
+        }
+       
+        bones[i].quaternion.setFromRotationMatrix( boneMat );
+        bones[i].quaternion.normalize(); 
+    }
+}
+
+export { quadraticBezierVec3, cubicBezierVec3,  mirrorQuat, mirrorQuatSelf, nlerpQuats, getTwistSwingQuaternions, getTwistQuaternion,  directionStringSymmetry, stringToDirection,  disposeObjectSafeThreejs, findIndexOfBone, objectConcat, findIndexOfBoneByName, getBindQuaternion, forceBindPoseQuats }

@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { disposeObjectSafeThreejs, findIndexOfBone, objectConcat } from "./Utils.js";
+import { disposeObjectSafeThreejs, findIndexOfBoneByName, objectConcat } from "./Utils.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 
 class Configurer {
@@ -33,27 +33,105 @@ class Configurer {
             handR: [],
         };
 
+        this.computeMatrices();
     }
     
-    setBoneMap(boneMap) {
-
-        this.boneMap = {};
-        for( let b in boneMap ){
-            this.boneMap[b] = findIndexOfBone( this.skeleton, boneMap[b] );
-        }
-
-        this.computeAxes();
-        this.computeConfig();
-    }
-
-    computeAxes(){
+    computeMatrices() {
         this.skeleton.bones[0].updateWorldMatrix( true, true ); // parents and children also
 
         this.meshToWorldMat4.multiplyMatrices( this.skeleton.bones[0].matrixWorld, this.skeleton.boneInverses[0] );
         this.meshToWorldMat4Inv = this.meshToWorldMat4.clone().invert();
         this.meshToWorldMat3.setFromMatrix4( this.meshToWorldMat4 );
         this.meshToWorldMat3Inv = this.meshToWorldMat3.clone().invert();
+    }
 
+    setBoneMap(boneMap, recompute = false) {
+        this.boneMap = {};
+        for( let b in boneMap ){
+            this.boneMap[b] = findIndexOfBoneByName( this.skeleton, boneMap[b] );
+        }
+
+        if (recompute) {
+            this.computeMatrices();
+            this.computeAxes();
+            this.computeConfig();
+        }
+    }
+
+    setAxes(axes) {
+        this.rightAxisMeshCoords = new THREE.Vector3( axes[0].x, axes[0].y, axes[0].z );
+        this.upAxisMeshCoords = new THREE.Vector3( axes[1].x, axes[1].y, axes[1].z );
+        this.frontAxisMeshCoords = new THREE.Vector3( axes[2].x, axes[2].y, axes[2].z );
+    }
+    
+    setConfig(configFile) {
+        let colors = {};
+
+        for (const bodyLoc in configFile.bodyLocations) {
+            let mainName = bodyLoc.replace(/_SideRR/i, "").replace(/_SideR/i, "").replace(/_SideLL/i, "").replace(/_SideL/i, "");
+            if ( !colors[mainName] ) { colors[mainName] = Math.random() * 0xffffff; }
+            
+            let o = configFile.bodyLocations[bodyLoc];
+            this.points.body.push({
+                boneAssigned: o[0],
+                wpos: new THREE.Vector3( o[1].x, o[1].y, o[1].z).clone().applyMatrix4( this.meshToWorldMat4 ),
+                wdir: new THREE.Vector3( o[2].x, o[2].y, o[2].z).clone().applyMatrix3( this.meshToWorldMat3 ),
+                name: bodyLoc,
+                color: colors[mainName],
+                boneSrcPos: this.skeleton.bones[ findIndexOfBoneByName(this.skeleton, o[0]) ].getWorldPosition( new THREE.Vector3() )
+            });
+        }
+        
+        for (const handLoc in configFile.handLocationsL) {
+            let mainName = handLoc.replace(/_Right/i, "").replace(/_Left/i, "").replace(/_Ulnar/i, "").replace(/_Radial/i, "").replace(/_Front/i, "").replace(/_Back/i, "").replace(/_Palmar/i, "");
+            if ( !colors[mainName] ) { colors[mainName] = Math.random() * 0xffffff; }
+            
+            let o = configFile.handLocationsL[handLoc];
+            this.points.handL.push({
+                boneAssigned: o[0],
+                wpos: new THREE.Vector3( o[1].x, o[1].y, o[1].z).clone().applyMatrix4( this.meshToWorldMat4 ),
+                name: handLoc,
+                color: colors[mainName],
+                boneSrcPos: this.skeleton.bones[ findIndexOfBoneByName(this.skeleton, o[0]) ].getWorldPosition( new THREE.Vector3() )
+            });
+        }
+        
+        for (const handLoc in configFile.handLocationsR) {
+            let mainName = handLoc.replace(/_Right/i, "").replace(/_Left/i, "").replace(/_Ulnar/i, "").replace(/_Radial/i, "").replace(/_Front/i, "").replace(/_Back/i, "").replace(/_Palmar/i, "");
+            if ( !colors[mainName] ) { colors[mainName] = Math.random() * 0xffffff; }
+
+            let o = configFile.handLocationsR[handLoc];
+            this.points.handR.push({
+                boneAssigned: o[0],
+                wpos: new THREE.Vector3( o[1].x, o[1].y, o[1].z).clone().applyMatrix4( this.meshToWorldMat4 ),
+                name: handLoc,
+                color: colors[mainName],
+                boneSrcPos: this.skeleton.bones[ findIndexOfBoneByName(this.skeleton, o[0]) ].getWorldPosition( new THREE.Vector3() )
+            });
+        }
+
+        // set finger axes
+        this.fingerAxes = configFile.fingerAxes;
+        
+        for (let i = 0; i < this.fingerAxes["R"]["bends"].length; i++) {
+            this.fingerAxes["R"]["bends"][i] = new THREE.Vector3( this.fingerAxes["R"]["bends"][i].x, this.fingerAxes["R"]["bends"][i].y, this.fingerAxes["R"]["bends"][i].z );
+            this.fingerAxes["L"]["bends"][i] = new THREE.Vector3( this.fingerAxes["L"]["bends"][i].x, this.fingerAxes["L"]["bends"][i].y, this.fingerAxes["L"]["bends"][i].z );
+        }
+        for (let i = 0; i < this.fingerAxes["R"]["splays"].length; i++) {
+            this.fingerAxes["R"]["splays"][i] = new THREE.Vector3( this.fingerAxes["R"]["splays"][i].x, this.fingerAxes["R"]["splays"][i].y, this.fingerAxes["R"]["splays"][i].z );
+            this.fingerAxes["L"]["splays"][i] = new THREE.Vector3( this.fingerAxes["L"]["splays"][i].x, this.fingerAxes["L"]["splays"][i].y, this.fingerAxes["L"]["splays"][i].z );
+        }
+        for (let i = 0; i < this.fingerAxes["R"]["quats"].length; i++) {
+            this.fingerAxes["R"]["quats"][i] = new THREE.Quaternion( this.fingerAxes["R"]["quats"][i].x, this.fingerAxes["R"]["quats"][i].y, this.fingerAxes["R"]["quats"][i].z, this.fingerAxes["R"]["quats"][i].w );
+            this.fingerAxes["L"]["quats"][i] = new THREE.Quaternion( this.fingerAxes["L"]["quats"][i].x, this.fingerAxes["L"]["quats"][i].y, this.fingerAxes["L"]["quats"][i].z, this.fingerAxes["L"]["quats"][i].w );
+        }
+    }
+
+    getAxes() {
+        return [this.rightAxisMeshCoords, this.upAxisMeshCoords, this.frontAxisMeshCoords];
+    }
+
+    computeAxes(){
         let a = (new THREE.Vector3()).setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.LShoulder ].clone().invert() );
         let b = (new THREE.Vector3()).setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.RShoulder ].clone().invert() );
         this.rightAxisMeshCoords.subVectors( a, b ).normalize();
@@ -68,7 +146,6 @@ class Configurer {
         this.worldZ = this.frontAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
         this.worldY = this.upAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
         this.worldX = this.rightAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
-
     }
 
     computeFingerAxes(){
@@ -546,17 +623,10 @@ class Configurer {
         return null;
     }
 
-    exportJSON(boneMap){
+    exportJSON(){
         // [ bone assigned, position in mesh coordinates, direction in mesh coordinates ]
         let result = {};
         result.axes = [ this.rightAxisMeshCoords.clone(), this.upAxisMeshCoords.clone(), this.frontAxisMeshCoords.clone() ];
-
-        result._commentsDefaultAngles = "elbow added. shoulder=[ added angle, min angle (<0), max angle (>0) ]",
-		result.elbowRaise = 0;
-		result.shoulderRaise = [ 0, 0, 45 ],
-		result.shoulderHunch = [ 0, 0, 40 ],
-
-        result.boneMap = JSON.parse( JSON.stringify( boneMap ) );
 
         result.bodyLocations = {};
         for ( let a in this.points.body ){
@@ -657,7 +727,7 @@ class ConfigPoint extends THREE.Group {
 
 
 class ConfigurerHelper {
-    static _E_MODES = { NONE: 0, HOVER: 1, EDIT: 3 };
+    static _E_MODES = { NONE: 0, HOVER: 1, EDIT: 3};
     constructor( configurer, camera, canvasDom ){
         this.configurer = configurer;
         this.mode = ConfigurerHelper._E_MODES.HOVER;
@@ -682,13 +752,12 @@ class ConfigurerHelper {
 
         this.transformControls = new TransformControls( this.camera, canvasDom );
         this.transformControls.attach( this.editModeData.p );
-        this.configurer.scene.add( this.transformControls );
+        this.configurer.scene.add(this.transformControls);
 
         this.setEditMode(0);
 
         this.points = {};
         this.computePoints();
-
     }
 
     dispose(){
@@ -884,7 +953,7 @@ class ConfigurerHelper {
 
         // update only if on "mesh intersect" mode
         if ( this.editModeData.mode != 0 || this.editModeData.frozen ){ return; }
-
+        
         // raycast to mesh 
         let result = this.configurer.doRaycast( rayOr, rayDir );
         
@@ -900,7 +969,7 @@ class ConfigurerHelper {
             this.editModeData.p.setDir( dir );
         }        
     }
-
+    
     update(){
         let rayDir = new THREE.Vector3( this.mouse.x, this.mouse.y, -1); 
         rayDir.applyMatrix4( this.camera.projectionMatrixInverse ).applyMatrix4( this.camera.matrixWorld );
@@ -912,6 +981,7 @@ class ConfigurerHelper {
         }
     }
 
-
+    
 }
+
 export{ Configurer, ConfigurerHelper };

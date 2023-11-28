@@ -2,7 +2,7 @@ import * as THREE from "three"
 
 
 class AUConfigurer {
-    constructor( model, scene) {
+    constructor( model, scene, initConfig = null) {
         this.model = model;
         this.scene = scene;
 
@@ -67,8 +67,11 @@ class AUConfigurer {
 
         this.au2bs = {};
 
-        this.avatarParts = [];
+        this.avatarParts = {};
+        this.partsMap = {};
         this.blendshapes = this.getBlendshapes();
+        
+        if (initConfig) this.readConfigFile(initConfig);
     }
 
     getBlendshapes(){
@@ -77,7 +80,8 @@ class AUConfigurer {
         for (let i = 0; i < this.model.children[0].children.length; i++) {
             let part = this.model.children[0].children[i];
             if (part.morphTargetDictionary){
-                this.avatarParts.push(part);
+                this.avatarParts[part.name] = part;
+                this.partsMap[part.name] = [];
                 for (const bsName in part.morphTargetDictionary){
                     if (!blendshapes[bsName]) blendshapes[bsName] = [];
                     blendshapes[bsName].push(part);
@@ -87,28 +91,40 @@ class AUConfigurer {
         return blendshapes;
     }
 
+    readConfigFile(initConfig) {
+        for (const au in initConfig.blendshapeMap) {
+            for (let i = 0;  i < initConfig.blendshapeMap[au].length; i++) {
+                this.blendshapeMap[au].push( initConfig.blendshapeMap[au][i] );
+            }
+        }
+    }
+
     exportJSON(){
         // [ bone assigned, position in mesh coordinates, direction in mesh coordinates ]
         let result = { };
-        result["parts"] = { };
-        // { "au": [ [parts, bsname, factor], ... ] }
+        result["parts"] = {...this.partsMap};
+
+        for (const part in result.parts) {
+            if ( !result.parts[part].length ) result.parts[part] = null;
+            result.parts[part] = [...new Set(result.parts[part])]
+        }
         
+        // { "au": [ [bsname, factor], ... ] }
         for ( const au in this.au2bs) {
             for ( let i = 0; i < this.au2bs[au].length; i++ ) {
-                let parts = this.au2bs[au][i][0];
-                let bsName = this.au2bs[au][i][1].onGetValue();
-                let factor = this.au2bs[au][i][2].onGetValue();
-                this.blendshapeMap[au].push([bsName, factor]);
-                
-                for (let j = 0; j < parts.length; j++) {
-                    let part = parts[j].name;
-                    if ( !result.parts[part]) result.parts[part] = [];
-                    result.parts[part].push(au);
+                try { this.au2bs[au][i][0].onGetValue() }
+                catch {
+                    this.au2bs[au].splice(i, 1); // delete empty au's
+                    i--;
+                    continue;
                 }
+                
+                let bsName = this.au2bs[au][i][0].onGetValue();
+                let factor = this.au2bs[au][i][1].onGetValue();
+                this.blendshapeMap[au].push([bsName, factor]);
             }
         }
         result.blendshapeMap = this.blendshapeMap;
-        // result.boneMap = JSON.parse( JSON.stringify( boneMap ) );
 
         return result;
     }

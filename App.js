@@ -1,10 +1,10 @@
-
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Configurer, ConfigurerHelper } from './Configurer.js';
 import { AppGUI } from './GUI.js';
-import { AUConfigurer } from './AUConfigurer.js';
+import { findIndexOfBoneByName } from './Utils.js';
 
 // Correct negative blenshapes shader of ThreeJS
 THREE.ShaderChunk[ 'morphnormal_vertex' ] = "#ifdef USE_MORPHNORMALS\n	objectNormal *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n	    objectNormal += getMorph( gl_VertexID, i, 1, 2 ) * morphTargetInfluences[ i ];\n		}\n	#else\n		objectNormal += morphNormal0 * morphTargetInfluences[ 0 ];\n		objectNormal += morphNormal1 * morphTargetInfluences[ 1 ];\n		objectNormal += morphNormal2 * morphTargetInfluences[ 2 ];\n		objectNormal += morphNormal3 * morphTargetInfluences[ 3 ];\n	#endif\n#endif";
@@ -38,9 +38,14 @@ class App {
             "LArm": null, "LElbow": null, "LWrist": null, "LHandThumb": null, "LHandIndex": null,
             "LHandMiddle": null, "LHandRing": null, "LHandPinky": null
        };
+        this.sphereIk = null;
+        this.miscMode = false;
+        this.axis = new THREE.Vector3(1, 0, 0);
 
         this.configurer = null;
         this.facial_configurer = null;
+        this.ik_configurer = null;
+        this.ik_configurer_left = null;
         this.configurerHelper = null;
         this.skeletonhelper = null;
     }
@@ -62,7 +67,7 @@ class App {
         // const gridHelper = new THREE.GridHelper( 10, 10 );
         // gridHelper.position.set(0,0.001,0);
         // this.scene.add( gridHelper );
-
+        
         // camera
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.01, 1000);
         this.controls = new OrbitControls( this.camera, this.renderer.domElement );
@@ -120,102 +125,29 @@ class App {
         backPlane.receiveShadow = true;
         this.scene.add( backPlane );
 
+        this.sphereIk = new THREE.Mesh( new THREE.SphereGeometry(0.01,16,16), new THREE.MeshStandardMaterial( { depthWrite:true, depthTest:true, color: 0xff0000 } ) );
+        this.sphereIk.position.set(-0.15, 1.3, 0.2);
+        this.sphereIk.visible = false;
+        this.scene.add(this.sphereIk);
+
+        this.miscTransformControls = new TransformControls( this.camera, this.renderer.domElement );
+        this.miscTransformControls.attach( this.sphereIk );
+        this.miscTransformControls.visible = false;
+        this.scene.add(this.miscTransformControls);
+        this.miscTransformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
+
         // so the screen is not black while loading
         this.renderer.render( this.scene, this.camera );
 
-        let filePath = './EvaLowTexturesV2Decimated.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
-        // let filePath = './camila_test.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        // let filePath = './merged_scaledglb.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        // let filePath = '../signon/data/kevin_finished_first_test_7.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        // let filePath = './Eva_Y.glb';  let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        // let filePath = './kevinRigBlender.glb'; let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        this.loadVisibleModel(filePath, modelRotation);
-
-        // this.loadConfigModel(filePath, modelRotation);
-
-        this.loaderGLB.load( filePath , (glb) => {
-            let model = this.model1 = glb.scene;
-            this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
-            model.traverse( (object) => {
-                if ( object.isMesh || object.isSkinnedMesh ) {
-                    if ( object.isSkinnedMesh ){ this.skeleton = object.skeleton;  object.isMesh = true; object.isSkinnedMesh = false; }
-                    object.frustumCulled = false;
-                    object.castShadow = true;
-                    object.receiveShadow = true;
-                    if( object.material ){
-                        object.material = new THREE.MeshBasicMaterial( { color: 0xdddddd } );
-                        object.material.side = THREE.DoubleSide; //needed for raycaster
-                    }
-                    if(object.material.map) 
-                        object.material.map.anisotropy = 16;
-                } 
-                if (object.isBone) {
-                    object.scale.set(1.0, 1.0, 1.0);
-                }else{
-                    object.scale.set(1.0, 1.0, 1.0);
-                    object.quaternion.set(0,0,0,1);
-                }
-            } );
-            model.position.set( 0,0,0 );
-            model.quaternion.premultiply( modelRotation );
-            model.castShadow = true;
-            model.visible = false;
-
-            this.scene.add(model);
-            let skeletonhelper = new THREE.SkeletonHelper( this.skeleton.bones[0] ); 
-            skeletonhelper.frustumCulled = false;
-            this.scene.add( skeletonhelper );
-            this.skeletonhelper = skeletonhelper;
-
-            this.skeleton.pose();
-            this.configurer = new Configurer( this.skeleton, this.model1, this.scene );
-            // this.configurerHelper = new ConfigurerHelper( this.configurer, this.camera, this.renderer.domElement );
-            // this.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
-            this.facial_configurer = new AUConfigurer(this.modelVisible, this.scene);
-    
-            this.autoMapBones(null);
-
-            window.addEventListener( "keyup", (e)=>{
-                switch( e.which ){
-                    case 27: // escape
-                        if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){ this.configurerHelper.cancelEdit(); } 
-                        break;
-                    case 70: // f
-                    if ( e.shiftKey ) this.configurerHelper.toggleFreezeEdit( 2 );
-                        break;
-                    case 72: // h
-                        if ( e.shiftKey ) this.configurerHelper.toggleVisibility( ); break;
-                    default: break;
-                }
-            });
-            window.addEventListener( "mouseup", (e)=>{
-                if ( e.shiftKey ){
-                    if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.HOVER ){
-                        this.configurerHelper.selectToEditFromHover();
-                    } 
-                }
-                else if ( e.altKey ){
-                    if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){
-                        this.configurerHelper.commitEdit();
-                    }
-                }
-            });
-            if ( typeof AppGUI != "undefined" ) { this.gui = new AppGUI( this ); }
-            this.animate();
-            $('#loading').fadeOut(); //hide();
-            
-        });
-
-        // window.addEventListener( 'resize', this.onResize.bind( this ) );
-        this.renderer.domElement.addEventListener( 'resize', this.onResize.bind( this ) );
+        if ( typeof AppGUI != "undefined" ) { this.gui = new AppGUI( this ); }
         
+        window.addEventListener( 'resize', this.onResize.bind( this ) );
+        this.renderer.domElement.addEventListener( 'resize', this.onResize.bind( this ) );
     }
 
     animate() {
 
-        if ( !window.fps ){ window.fps = 10; }
-        setTimeout( this.animate.bind(this), 1000/window.fps );
-        // requestAnimationFrame( this.animate.bind(this) );
+        requestAnimationFrame( this.animate.bind(this) );
 
         let delta = this.clock.getDelta() 
         this.fps = Math.floor( 1.0 / ((delta>0)?delta:1000000) );
@@ -223,9 +155,13 @@ class App {
         delta *= this.signingSpeed;
         this.elapsedTime += delta;
 
-        
         if (this.configurerHelper) this.configurerHelper.update();
-
+        
+        // let dist = this.sphereIk.position.distanceTo( this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RArm" ]) ].getWorldPosition( new THREE.Vector3() ) );
+        // if (this.ik_configurer) if (dist > this.ik_configurer.armWorldSize) this.sphereIk.position.set( this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RWrist" ]) ].getWorldPosition( new THREE.Vector3() ).x, this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RWrist" ]) ].getWorldPosition( new THREE.Vector3() ).y, this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RWrist" ]) ].getWorldPosition( new THREE.Vector3() ).z );
+        if (this.ik_configurer && this.miscMode) this.ik_configurer.reachTarget( this.sphereIk.position );
+        if (this.ik_configurer_left && this.miscMode) this.ik_configurer_left.reachTarget( new THREE.Vector3( -this.sphereIk.position.x, this.sphereIk.position.y, this.sphereIk.position.z ) );
+        
         this.renderer.render( this.scene, this.camera );
 
     }
@@ -270,9 +206,79 @@ class App {
         })
     }
 
-    autoMapBones(boneMap) {
+    loadConfigModel(filePath, modelRotation, callback = null) {
+        this.loaderGLB.load( filePath , (glb) => {
+            let model = this.model1 = glb.scene;
+            this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
+            model.traverse( (object) => {
+                if ( object.isMesh || object.isSkinnedMesh ) {
+                    if ( object.isSkinnedMesh ){ this.skeleton = object.skeleton;  object.isMesh = true; object.isSkinnedMesh = false; }
+                    object.frustumCulled = false;
+                    object.castShadow = true;
+                    object.receiveShadow = true;
+                    if( object.material ){
+                        object.material = new THREE.MeshBasicMaterial( { color: 0xdddddd } );
+                        object.material.side = THREE.DoubleSide; //needed for raycaster
+                    }
+                    if(object.material.map) 
+                        object.material.map.anisotropy = 16;
+                } 
+                if (object.isBone) {
+                    object.scale.set(1.0, 1.0, 1.0);
+                }else{
+                    object.scale.set(1.0, 1.0, 1.0);
+                    object.quaternion.set(0,0,0,1);
+                }
+            } );
+            model.position.set( 0,0,0 );
+            model.quaternion.premultiply( modelRotation );
+            model.castShadow = true;
+            model.visible = false;
+
+            this.scene.add(model);
+            let skeletonhelper = new THREE.SkeletonHelper( this.skeleton.bones[0] ); 
+            skeletonhelper.frustumCulled = false;
+            this.scene.add( skeletonhelper );
+            this.skeletonhelper = skeletonhelper;
+
+            this.skeleton.pose();
+            this.configurer = new Configurer( this.skeleton, this.model1, this.scene );
+    
+            window.addEventListener( "keyup", (e)=>{
+                switch( e.which ){
+                    case 27: // escape
+                        if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){ this.configurerHelper.cancelEdit(); } 
+                        break;
+                    case 70: // f
+                    if ( e.shiftKey ) this.configurerHelper.toggleFreezeEdit( 2 );
+                        break;
+                    case 72: // h
+                        if ( e.shiftKey ) this.configurerHelper.toggleVisibility( ); break;
+                    default: break;
+                }
+            });
+            window.addEventListener( "mouseup", (e)=>{
+                if ( e.shiftKey ){
+                    if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.HOVER ){
+                        this.configurerHelper.selectToEditFromHover();
+                    } 
+                }
+                else if ( e.altKey ){
+                    if ( this.configurerHelper.getMode() == ConfigurerHelper._E_MODES.EDIT ){
+                        this.configurerHelper.commitEdit();
+                    }
+                }
+            });
+            if (callback){ callback(); }
+            this.animate();
+            $('#loading').fadeOut(); //hide();
+            
+        });
+    }
+
+    autoMapBones() {
         
-        boneMap = {
+        let boneMap = {
             "Head":           "head",
             "Neck":           "neck",
             "ShouldersUnion": "spine2", // aka chest
@@ -296,7 +302,9 @@ class App {
             "LHandMiddle":    "lefthandmiddle1",
             "LHandRing":      "lefthandring1",
             "LHandPinky":     "lefthandpinky1",
-            "LWrist":         "lefthand"
+            "LWrist":         "lefthand",
+			"LEye":           "lefteye",
+			"REye":           "righteye"
         };
 
         
@@ -305,8 +313,8 @@ class App {
 
         for (let i = 0; i < this.bones.length; i++) {
             for (const bone in boneMap) {
-                if ( this.bones[i].toLocaleLowerCase().includes( boneMap[bone] ) ) {
-                    this.boneMap[bone] = this.bones[i];
+                if ( this.bones[i].toLocaleLowerCase().includes( boneMap[bone] ) && !this.bones[i].toLocaleLowerCase().includes( "end" ) ) {
+                    if ( !this.boneMap[bone] ) this.boneMap[bone] = this.bones[i];
                     break;
                 }
             }
