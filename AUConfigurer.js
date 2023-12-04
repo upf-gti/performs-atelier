@@ -1,6 +1,3 @@
-import * as THREE from "three"
-
-
 class AUConfigurer {
     constructor( model, scene, initConfig = null) {
         this.model = model;
@@ -67,11 +64,12 @@ class AUConfigurer {
 
         this.au2bs = {};
 
-        this.avatarParts = {};
-        this.partsMap = {};
-        this.blendshapes = this.getBlendshapes();
+        this.avatarParts = {}; // {"part name": object, ...}
+        this.partsMap = {}; // {"part name": ["action unit 1", "action unit 2"...], ...}
+        this.blendshapes = this.getBlendshapes(); // {"bs name": [mesh, mesh], ...}
         
         if (initConfig) this.readConfigFile(initConfig);
+        else this.automapBS2AU();
     }
 
     getBlendshapes(){
@@ -95,6 +93,85 @@ class AUConfigurer {
         for (const au in initConfig.blendshapeMap) {
             for (let i = 0;  i < initConfig.blendshapeMap[au].length; i++) {
                 this.blendshapeMap[au].push( initConfig.blendshapeMap[au][i] );
+            }
+        }
+    }
+
+    strIncludesArrayElement(str, arr) {
+        for (let i = 0; i < arr.length; i++) {
+            if ( str.includes(arr[i]) ) return true;
+        }
+        return false;
+    }
+
+    findWords(bsName, words) {
+        let extraWords = {
+            "raiser":  ["raise", "up"],
+            "lowerer":  ["lower","down"],
+            "lip":  ["lip", "mouth"],
+            "stretcher":  ["stretch", "open"],
+            "blow":  ["blow", "puff"],
+            "thrust":  ["thrust", "forward", "foreward"],
+            "suck":  ["suck", "roll"],
+            "drop":  ["drop", "down"], 
+            "wrinkler":  ["wrinkle", "scrunch", "sneer"],
+            "dimpler": ["dimple"],
+            "puckerer": ["pucker"],
+            "funneler": ["whistle", "funnel"],
+            "left": ["left", "_l"],
+            "right": ["right", "_r"]
+        };
+        
+        for (let j = 0; j < words.length; j++) {
+            let word = words[j].toLocaleLowerCase();
+            
+            // check other similar words
+            if ( extraWords[word] ) {
+                if ( !this.strIncludesArrayElement(bsName.toLocaleLowerCase(), extraWords[word]) ) {
+                    return false;
+                }
+            } // if there is no coincidence, move on to the next bs
+            else { if ( !bsName.toLocaleLowerCase().includes(word) ) { return false; } } // move to next bs
+            
+            // if here -> word is included in bs
+            if ( j < words.length - 1 ) { continue; } // if there are more words to look for, keep going
+            
+            return true;
+        }
+
+    }
+    
+    automapBS2AU() {
+
+        // look for official au name or a more common/daily use name
+        let extraAU = {
+            "Lip_Corner_Puller_Left": "Smile_Left",
+            "Lip_Corner_Puller_Right": "Smile_Right",
+            "Lip_Corner_Depressor_Left": "Frown_Left",
+            "Lip_Corner_Depressor_Right": "Frown_Right",
+            "Lower_Lip_Depressor_Left": "Lower_Lip_Down_Left",
+            "Lower_Lip_Depressor_Right": "Lower_Lip_Down_Right",
+            "Upper_Lid_Raiser_Left": "Eye_Wide_Left",
+            "Upper_Lid_Raiser_Right": "Eye_Wide_Right"
+        };
+
+        for (const auName in this.blendshapeMap) {
+            let words;
+            // for each action unit search all blendshapes
+            for (const bsName in this.blendshapes) {
+                words = auName.split("_"); // search each word of the au
+                
+                if ( this.findWords(bsName, words) ) {
+                    this.blendshapeMap[auName].push([bsName, 1.0]); // if last word to check is included, add bs to au map
+                }
+                
+                if (extraAU[auName]) {
+                    words = extraAU[auName].split("_");
+                    if ( this.findWords(bsName, words) ) {
+                        this.blendshapeMap[auName].push([bsName, 1.0]); // if last word to check is included, add bs to au map
+                    }
+                }
+
             }
         }
     }

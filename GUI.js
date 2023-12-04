@@ -31,8 +31,8 @@ class AppGUI{
 
     avatarSelect( panel ) {
         this.avatars = {"Eva": {}, "Kevin": {}, "From disk": {}};
-        this.avatars["Eva"]["filePath"] = './EvaLowTexturesV2Decimated.glb';  this.avatars["Eva"]["modelRotation"] = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
-        this.avatars["Kevin"]["filePath"] = '../signon/data/kevin_finished_first_test_7.glb';  this.avatars["Kevin"]["modelRotation"] = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
+        this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva/Eva.glb';  this.avatars["Eva"]["modelRotation"] = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
+        this.avatars["Kevin"]["filePath"] = '/3Dcharacters/Kevin/Kevin.glb';  this.avatars["Kevin"]["modelRotation"] = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
         this.avatars["From disk"]["modelRotation"] = this.avatars["Kevin"]["modelRotation"];
     
         panel.refresh = () => {
@@ -84,13 +84,13 @@ class AppGUI{
 
     createPanel() {
         
-        this.app.loadVisibleModel(this.avatars[this.character]["filePath"], this.avatars[this.character]["modelRotation"]);
+        this.app.loadVisibleModel(this.avatars[this.character]["filePath"], this.avatars[this.character]["modelRotation"], () => {
+            this.app.facial_configurer = new AUConfigurer(this.app.modelVisible, this.app.scene, this.configFile.faceController);
+            this.partsMap = this.app.facial_configurer.partsMap;
+        });
         this.app.loadConfigModel(this.avatars[this.character]["filePath"], this.avatars[this.character]["modelRotation"], () => {
             if (this.avatarFile) this.app.modelFileName = this.avatarFile;
 
-            this.app.facial_configurer = new AUConfigurer(this.app.modelVisible, this.app.scene, this.configFile.faceController);
-            this.partsMap = this.app.facial_configurer.partsMap;
-            
             this.app.skeleton.bones.forEach((obj) => { this.bones.push(obj.name); }); // get bone names of avatar
             
             var [left_area, right_area] = this.main_area.split({sizes: ["25%", "75%"]});
@@ -245,7 +245,7 @@ class AppGUI{
 
         for (const part in this.app.boneMap) {
             panel.addDropdown(part, this.bones, this.app.boneMap[part], (value, event) => {
-
+                
                 if ( warned ) {
                     this.app.boneMap[part] = value;
                     this.app.configurer.setBoneMap(this.app.boneMap, true);
@@ -258,7 +258,7 @@ class AppGUI{
                         this.app.configurer.setBoneMap(this.app.boneMap, true);
                         this.app.configurerHelper.computePoints();
                         this.app.configurerHelper.setScale(s.onGetValue());
-                    }, {input: false});
+                    }, {input: false, on_cancel: () => panel.widgets[part].onSetValue(this.app.boneMap[part]) });
                     warned = true;
                 }
 

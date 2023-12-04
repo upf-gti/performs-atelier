@@ -157,8 +157,6 @@ class App {
 
         if (this.configurerHelper) this.configurerHelper.update();
         
-        // let dist = this.sphereIk.position.distanceTo( this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RArm" ]) ].getWorldPosition( new THREE.Vector3() ) );
-        // if (this.ik_configurer) if (dist > this.ik_configurer.armWorldSize) this.sphereIk.position.set( this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RWrist" ]) ].getWorldPosition( new THREE.Vector3() ).x, this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RWrist" ]) ].getWorldPosition( new THREE.Vector3() ).y, this.skeletonVisible.bones[ findIndexOfBoneByName(this.skeletonVisible, this.boneMap[ "RWrist" ]) ].getWorldPosition( new THREE.Vector3() ).z );
         if (this.ik_configurer && this.miscMode) this.ik_configurer.reachTarget( this.sphereIk.position );
         if (this.ik_configurer_left && this.miscMode) this.ik_configurer_left.reachTarget( new THREE.Vector3( -this.sphereIk.position.x, this.sphereIk.position.y, this.sphereIk.position.z ) );
         
@@ -172,7 +170,7 @@ class App {
         this.renderer.setSize(this.renderer.domElement.width, this.renderer.domElement.height, false);
     }
 
-    loadVisibleModel(filePath, modelRotation) {
+    loadVisibleModel(filePath, modelRotation, callback = null) {
         this.loaderGLB.load( filePath , (glb) => {
             let model = this.modelVisible = glb.scene;
             let skeleton = null;
@@ -201,6 +199,7 @@ class App {
 
             this.scene.add(model);
             // this.scene.add( new THREE.SkeletonHelper( model ) );
+            if (callback){ callback(); }
 
             skeleton.pose();
         })
