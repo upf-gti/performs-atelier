@@ -234,8 +234,8 @@ class AppGUI{
 
         panel.merge();
         
-        panel.branch("Visible Parts", {closed: false, icon: "fa-solid fa-hat-wizard", filter: false});
-        panel.addTextArea(null, "Remove accessories that may interfeer with the automatic computing of body locations. Be aware, this action takes some time.", null, {disabled: true, fitHeight: true});
+        panel.branch("Visible Parts", {closed: true, icon: "fa-solid fa-hat-wizard", filter: true});
+        panel.addTextArea(null, "Remove accessories that may interfeer with the automatic computing of body locations. Be aware, this action takes some time.", null, {disabled: true});
         panel.addTextArea(null, "Warning! If you change the selection all your edits will be lost. Adjust this before editing body locations.", null, {disabled: true});
 
         for (let i = 0; i < this.app.modelVisible.children[0].children.length; i++) {
