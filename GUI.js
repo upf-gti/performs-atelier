@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import { ConfigurerHelper } from "./Configurer.js";
+import { Configurer, ConfigurerHelper } from "./Configurer.js";
 import { LX } from 'lexgui';
 import { AUConfigurer } from "./AUConfigurer.js";
 import { GeometricArmIK } from "./GeometricArmIK.js";
@@ -30,11 +30,10 @@ class AppGUI{
     }
 
     avatarSelect( panel ) {
-        this.avatars = {"Eva": {}, "Kevin": {}, "From disk": {}};
-        this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva/Eva.glb';  this.avatars["Eva"]["modelRotation"] = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), -Math.PI/2 );
-        this.avatars["Kevin"]["filePath"] = '/3Dcharacters/Kevin/Kevin.glb';  this.avatars["Kevin"]["modelRotation"] = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), 0 );
-        this.avatars["From disk"]["modelRotation"] = this.avatars["Kevin"]["modelRotation"];
-    
+        this.avatars = {"Eva": {}, "From disk": {}};
+        this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva_Low/Eva_Low.glb';  this.avatars["Eva"]["modelRotation"] = -Math.PI/2;
+        this.avatars["From disk"]["modelRotation"] = 0;
+
         panel.refresh = () => {
             panel.clear();
             
@@ -43,35 +42,31 @@ class AppGUI{
                 value: "Eva",
                     callback: (value) => { this.character = value; panel.refresh(); }
                 }, {
-                value: "Kevin",
-                    callback: (value) => { this.character = value; panel.refresh(); }
-                }, {
                 value: "From disk",
                     callback: (value) => { this.character = value; this.avatars["From disk"]["filePath"] = null; panel.refresh(); }
                 }
             ], {selected: this.character});
 
             if (this.character === "From disk") {
-                panel.addFile("Upload your own avatar", (v, e) => {
+                panel.addFile("Avatar File", (v, e) => {
                     this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
                     let extension = this.avatarFile.split(".")[1];
                     if (extension == "glb" || extension == "gltf") { this.avatars["From disk"]["filePath"] = v; }
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
                 }, {type: "url"});
-                panel.addCheckbox("Apply Rotation", false, (v) => {
-                    this.avatars["From disk"]["modelRotation"] = ( v ? this.avatars["Eva"]["modelRotation"] : this.avatars["Kevin"]["modelRotation"] );
-                });
-                panel.addFile("Upload Config File (optional)", (v) => {
+                panel.addFile("Config File (optional)", (v) => {
                     let extension = document.getElementsByTagName("input")[2].files[0].name.split(".")[1];
                     if (extension == "json") { this.configFile = JSON.parse(v); }
                     else { LX.popup("Config file must be a JSON!"); }
                 }, {type: "text"});
+                panel.addNumber("Apply Rotation", 0, (v) => {
+                    this.avatars["From disk"]["modelRotation"] = v * Math.PI / 180;
+                }, { min: -180, max: 180, step: 1 } );
             }
 
             panel.addButton(null, "Next", () => {
                 if (this.avatars[this.character] && this.avatars[this.character]["filePath"]) {
-                    panel.clear();
-                    this.initDialog.root.remove();
+                    panel.clear(); this.initDialog.root.remove();
                     this.createPanel();
                 }
                 else {
@@ -83,55 +78,56 @@ class AppGUI{
     }
 
     createPanel() {
+        var [left_area, right_area] = this.main_area.split({sizes: ["25%", "75%"]});
+        var [left_area, export_area] = left_area.split({type: "vertical", sizes: ["96%", "4%"]});
         
-        this.app.loadVisibleModel(this.avatars[this.character]["filePath"], this.avatars[this.character]["modelRotation"], () => {
+        const leftTabs = left_area.addTabs();
+
+        this.panelA = new LX.Panel();
+        leftTabs.add( "Body Locations", this.panelA, {onSelect: () => this.onClick("Body Locations")} );
+        
+        this.panelB = new LX.Panel();
+        leftTabs.add( "Action Units", this.panelB, {onSelect: () => this.onClick("Action Units") });
+
+        this.panelC = new LX.Panel();
+        leftTabs.add( "Miscellaneous", this.panelC, {onSelect: () => this.onClick("Miscellaneous")} );
+        
+        var panelD = new LX.Panel();
+        export_area.attach(panelD);
+
+        // add canvas to left upper part
+        var canvas = document.getElementById("canvas");
+        right_area.attach(canvas);
+        canvas.width = right_area.root.clientWidth;
+        canvas.height = right_area.root.clientHeight;
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        right_area.size[0] = canvas.width; right_area.size[1] = canvas.height;
+        this.app.onResize();
+        
+        let that = this;
+        right_area.onresize = function( bounding ) {
+            canvas.width = bounding.width;
+            canvas.height = bounding.height;
+            that.app.onResize();
+        };
+        
+        let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), this.avatars[this.character]["modelRotation"] );
+
+        this.app.loadVisibleModel(this.avatars[this.character]["filePath"], modelRotation, () => {
             this.app.facial_configurer = new AUConfigurer(this.app.modelVisible, this.app.scene, this.configFile.faceController);
             this.partsMap = this.app.facial_configurer.partsMap;
-        });
-        this.app.loadConfigModel(this.avatars[this.character]["filePath"], this.avatars[this.character]["modelRotation"], () => {
-            if (this.avatarFile) this.app.modelFileName = this.avatarFile;
-
-            this.app.skeleton.bones.forEach((obj) => { this.bones.push(obj.name); }); // get bone names of avatar
-            
-            var [left_area, right_area] = this.main_area.split({sizes: ["25%", "75%"]});
-            var [left_area, export_area] = left_area.split({type: "vertical", sizes: ["96%", "4%"]});
-            
-            const leftTabs = left_area.addTabs();
-
-            this.panelA = new LX.Panel();
-            leftTabs.add( "Body Locations", this.panelA, {onSelect: () => this.onClick("Body Locations")} );
-            
-            this.panelB = new LX.Panel();
             this.actionUnits( this.panelB );
-            leftTabs.add( "Action Units", this.panelB, {onSelect: () => this.onClick("Action Units") });
 
-            this.panelC = new LX.Panel();
-            
-            this.miscellaneous( this.panelC );
-            leftTabs.add( "Miscellaneous", this.panelC, {onSelect: () => this.onClick("Miscellaneous")} );
-            
-            // add canvas to left upper part
-            var canvas = document.getElementById("canvas");
-            right_area.attach(canvas);
-            canvas.width = right_area.root.clientWidth;
-            canvas.height = right_area.root.clientHeight;
-            canvas.style.width = "100%";
-            canvas.style.height = "100%";
-            right_area.size[0] = canvas.width; right_area.size[1] = canvas.height;
-            this.app.onResize();
-            
-            let that = this;
-            right_area.onresize = function( bounding ) {
-                canvas.width = bounding.width;
-                canvas.height = bounding.height;
-                that.app.onResize();
-            };
-            
-            var panelD = new LX.Panel();
-            this.addExport(panelD);
-            export_area.attach(panelD);
-            
-            this.dialogClosable = new LX.Dialog("Bone Mapping", p => { this.boneMapping(p); }, { size: ["80%", "70%"], closable: false });
+            this.app.loadConfigModel(this.avatars[this.character]["filePath"], modelRotation, () => {
+                if (this.avatarFile) this.app.modelFileName = this.avatarFile;
+                
+                this.app.skeleton.bones.forEach((obj) => { this.bones.push(obj.name); }); // get bone names of avatar
+                this.miscellaneous( this.panelC );
+                this.addExport(panelD);
+                
+                this.dialogClosable = new LX.Dialog("Bone Mapping", p => { this.boneMapping(p); }, { size: ["80%", "70%"], closable: false });
+            });
         });
     }
     
@@ -168,7 +164,7 @@ class AppGUI{
             this.app.configurer.setBoneMap(this.app.boneMap);
             
             if (this.configFile.bodyController){
-                this.app.configurer.setAxes(this.configFile.bodyController.axes);
+                this.app.configurer.computeAxes(this.configFile.bodyController.axes);
                 this.app.configurer.setConfig(this.configFile.bodyController);
                 this.config.elbowRaise = this.configFile.bodyController.elbowRaise * Math.PI / 180;    
                 this.config.shoulderRaise = this.configFile.bodyController.shoulderRaise.map((x) => x * Math.PI / 180);    
@@ -208,7 +204,7 @@ class AppGUI{
         
         let s = panel.addNumber("Points Scale", 1.0, (value) => {
             this.app.configurerHelper.setScale(value);
-        }, {step: 0.1, min: 0.1, max: 1.5});
+        }, {step: 0.01, min: 0.1, max: 3.0});
 
         panel.addComboButtons("Mode", [
             {
@@ -237,11 +233,39 @@ class AppGUI{
         });
 
         panel.merge();
-                
-        let warned = false;
         
+        panel.branch("Visible Parts", {closed: false, icon: "fa-solid fa-hat-wizard", filter: false});
+        panel.addTextArea(null, "Remove accessories that may interfeer with the automatic computing of body locations. Be aware, this action takes some time.", null, {disabled: true, fitHeight: true});
+        panel.addTextArea(null, "Warning! If you change the selection all your edits will be lost. Adjust this before editing body locations.", null, {disabled: true});
+
+        for (let i = 0; i < this.app.modelVisible.children[0].children.length; i++) {
+            
+            let childVisible = this.app.modelVisible.children[0].children[i];
+            let child = this.app.model1.children[0].children[i];
+            if (child.isBone) { continue; } // no bone
+            
+            panel.addCheckbox(childVisible.name, true, (value) => {
+
+                child.traverse( (object) => {
+                    object.visible = value;
+                } );
+                childVisible.traverse( (object) => {
+                    object.visible = value;
+                } );
+
+                child.visible = value;
+                childVisible.visible = value;
+                this.app.configurer.computeConfig();
+                this.app.configurerHelper.computePoints();
+                this.app.configurerHelper.setScale(s.onGetValue());
+            });
+        }
+
+        panel.merge();
+
         panel.branch("Edit Bone Map", {closed: true, icon: "fa-solid fa-bone", filter: true});
         panel.addTextArea(null, "Warning! If you change the bone map all your edits will be lost. Adjust this mapping before editing body locations.", null, {disabled: true});
+        let warned = false;
 
         for (const part in this.app.boneMap) {
             panel.addDropdown(part, this.bones, this.app.boneMap[part], (value, event) => {
@@ -450,8 +474,7 @@ class AppGUI{
                 // export
                 let configurerJSON = this.app.configurer.exportJSON();
                 configurerJSON._comments = "All points are in mesh space (no matrices of any kind are applied)"
-                configurerJSON.fingerAxes._comments = "Axes in mesh space. Quats = quats from where axes where computed (tpose). Thumb has a correction Thumb quat = qCorrection * qBind";
-        
+                
                 configurerJSON._commentsDefaultAngles = "elbow added. shoulder=[ added angle, min angle (<0), max angle (>0) ]",
                 configurerJSON.elbowRaise = this.config.elbowRaise * 180 / Math.PI; // to degrees
                 configurerJSON.shoulderRaise = this.config.shoulderRaise.map((x) => x * 180 / Math.PI);
@@ -514,8 +537,9 @@ class AppGUI{
             this.app.configurerHelper.mode = ConfigurerHelper._E_MODES.EDIT;
             
             // hide miscellaneous transform controls
-            this.app.sphereIk.visible = false;    
+            this.app.sphereIk.visible = false;
             this.app.miscTransformControls.visible = false;
+            this.app.miscTransformControls.enabled = false;
             this.app.miscMode = false;
             this.app.skeletonVisible.pose();
         }
@@ -536,6 +560,7 @@ class AppGUI{
             // hide miscellaneous transform controls
             this.app.sphereIk.visible = false;    
             this.app.miscTransformControls.visible = false;
+            this.app.miscTransformControls.enabled = false;
             this.app.miscMode = false;
             this.app.skeletonVisible.pose();
         }
@@ -552,7 +577,8 @@ class AppGUI{
             // show miscellaneous transform controls
             this.app.sphereIk.visible = true;    
             this.app.miscMode = true;
-            this.app.miscTransformControls.visible = true;    
+            this.app.miscTransformControls.visible = true;
+            this.app.miscTransformControls.enabled = true;
         }
         
         this.panelC.refresh();

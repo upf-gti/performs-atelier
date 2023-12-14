@@ -36,7 +36,7 @@ class App {
             "RElbow": null, "RWrist": null, "RHandThumb": null, "RHandIndex": null,
             "RHandMiddle": null, "RHandRing": null, "RHandPinky": null, "LShoulder": null,
             "LArm": null, "LElbow": null, "LWrist": null, "LHandThumb": null, "LHandIndex": null,
-            "LHandMiddle": null, "LHandRing": null, "LHandPinky": null
+            "LHandMiddle": null, "LHandRing": null, "LHandPinky": null, "REye": null, "LEye": null
        };
         this.sphereIk = null;
         this.miscMode = false;
@@ -133,6 +133,7 @@ class App {
         this.miscTransformControls = new TransformControls( this.camera, this.renderer.domElement );
         this.miscTransformControls.attach( this.sphereIk );
         this.miscTransformControls.visible = false;
+        this.miscTransformControls.enabled = false;
         this.scene.add(this.miscTransformControls);
         this.miscTransformControls.addEventListener( "dragging-changed", (e)=>{ this.controls.enabled = !e.value; } );
 
@@ -278,6 +279,8 @@ class App {
     autoMapBones() {
         
         let boneMap = {
+			"LEye":           "lefteye",
+			"REye":           "righteye",
             "Head":           "head",
             "Neck":           "neck",
             "ShouldersUnion": "spine2", // aka chest
@@ -301,9 +304,7 @@ class App {
             "LHandMiddle":    "lefthandmiddle1",
             "LHandRing":      "lefthandring1",
             "LHandPinky":     "lefthandpinky1",
-            "LWrist":         "lefthand",
-			"LEye":           "lefteye",
-			"REye":           "righteye"
+            "LWrist":         "lefthand"
         };
 
         

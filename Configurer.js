@@ -57,12 +57,6 @@ class Configurer {
             this.computeConfig();
         }
     }
-
-    setAxes(axes) {
-        this.rightAxisMeshCoords = new THREE.Vector3( axes[0].x, axes[0].y, axes[0].z );
-        this.upAxisMeshCoords = new THREE.Vector3( axes[1].x, axes[1].y, axes[1].z );
-        this.frontAxisMeshCoords = new THREE.Vector3( axes[2].x, axes[2].y, axes[2].z );
-    }
     
     setConfig(configFile) {
         let colors = {};
@@ -109,39 +103,30 @@ class Configurer {
                 boneSrcPos: this.skeleton.bones[ findIndexOfBoneByName(this.skeleton, o[0]) ].getWorldPosition( new THREE.Vector3() )
             });
         }
-
-        // set finger axes
-        this.fingerAxes = configFile.fingerAxes;
-        
-        for (let i = 0; i < this.fingerAxes["R"]["bends"].length; i++) {
-            this.fingerAxes["R"]["bends"][i] = new THREE.Vector3( this.fingerAxes["R"]["bends"][i].x, this.fingerAxes["R"]["bends"][i].y, this.fingerAxes["R"]["bends"][i].z );
-            this.fingerAxes["L"]["bends"][i] = new THREE.Vector3( this.fingerAxes["L"]["bends"][i].x, this.fingerAxes["L"]["bends"][i].y, this.fingerAxes["L"]["bends"][i].z );
-        }
-        for (let i = 0; i < this.fingerAxes["R"]["splays"].length; i++) {
-            this.fingerAxes["R"]["splays"][i] = new THREE.Vector3( this.fingerAxes["R"]["splays"][i].x, this.fingerAxes["R"]["splays"][i].y, this.fingerAxes["R"]["splays"][i].z );
-            this.fingerAxes["L"]["splays"][i] = new THREE.Vector3( this.fingerAxes["L"]["splays"][i].x, this.fingerAxes["L"]["splays"][i].y, this.fingerAxes["L"]["splays"][i].z );
-        }
-        for (let i = 0; i < this.fingerAxes["R"]["quats"].length; i++) {
-            this.fingerAxes["R"]["quats"][i] = new THREE.Quaternion( this.fingerAxes["R"]["quats"][i].x, this.fingerAxes["R"]["quats"][i].y, this.fingerAxes["R"]["quats"][i].z, this.fingerAxes["R"]["quats"][i].w );
-            this.fingerAxes["L"]["quats"][i] = new THREE.Quaternion( this.fingerAxes["L"]["quats"][i].x, this.fingerAxes["L"]["quats"][i].y, this.fingerAxes["L"]["quats"][i].z, this.fingerAxes["L"]["quats"][i].w );
-        }
     }
 
     getAxes() {
         return [this.rightAxisMeshCoords, this.upAxisMeshCoords, this.frontAxisMeshCoords];
     }
 
-    computeAxes(){
-        let a = (new THREE.Vector3()).setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.LShoulder ].clone().invert() );
-        let b = (new THREE.Vector3()).setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.RShoulder ].clone().invert() );
-        this.rightAxisMeshCoords.subVectors( a, b ).normalize();
+    computeAxes(axes = null){
+        if (axes) {
+            this.rightAxisMeshCoords = new THREE.Vector3( axes[0].x, axes[0].y, axes[0].z );
+            this.upAxisMeshCoords = new THREE.Vector3( axes[1].x, axes[1].y, axes[1].z );
+            this.frontAxisMeshCoords = new THREE.Vector3( axes[2].x, axes[2].y, axes[2].z );
+        }
+        else {
+            let a = (new THREE.Vector3()).setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.LShoulder ].clone().invert() );
+            let b = (new THREE.Vector3()).setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.RShoulder ].clone().invert() );
+            this.rightAxisMeshCoords.subVectors( a, b ).normalize();
 
-        a = a.setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.BelowStomach ].clone().invert() );
-        b = b.setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.Hips ].clone().invert() );
-        this.upAxisMeshCoords.subVectors( a, b ).normalize();
-        
-        this.frontAxisMeshCoords.crossVectors( this.rightAxisMeshCoords, this.upAxisMeshCoords ).normalize();
-        this.upAxisMeshCoords.crossVectors( this.frontAxisMeshCoords, this.rightAxisMeshCoords ).normalize();
+            a = a.setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.BelowStomach ].clone().invert() );
+            b = b.setFromMatrixPosition( this.skeleton.boneInverses[ this.boneMap.Hips ].clone().invert() );
+            this.upAxisMeshCoords.subVectors( a, b ).normalize();
+            
+            this.frontAxisMeshCoords.crossVectors( this.rightAxisMeshCoords, this.upAxisMeshCoords ).normalize();
+            this.upAxisMeshCoords.crossVectors( this.frontAxisMeshCoords, this.rightAxisMeshCoords ).normalize();
+        }
 
         this.worldZ = this.frontAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
         this.worldY = this.upAxisMeshCoords.clone().applyMatrix3( this.meshToWorldMat3 ).normalize();
@@ -227,28 +212,28 @@ class Configurer {
         // directions are not in world nor in mesh coords. x*rightAxisMeshCoords, y*upAxisMeshCoords, z*frontAxisMeshCoords
         // dx: delta to add in the direction X to move from sidell to siderr
         let faceLocations = { 
-            HEAD_TOP:       { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ) },
-            FOREHEAD:       { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ) },
+            HEAD_TOP:       { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 60 * Math.PI/180 ), z: Math.cos( 60 * Math.PI/180 ), srcBone: "Head" },
+            FOREHEAD:       { dx: Math.cos( 75 * Math.PI/180 ), x: 0, y: Math.sin( 42 * Math.PI/180 ), z: Math.cos( 42 * Math.PI/180 ), srcBone: "Head" },
 
-            EYEBROWS_LINE:  { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ) },
-            EYEBROW_RIGHT:  { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 102 * Math.PI/180 ), y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            EYEBROW_LEFT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 78 * Math.PI/180 ),  y: Math.sin( 38 * Math.PI/180 ), z: Math.cos( 38 * Math.PI/180 ) },
-            EYES_LINE:      { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            EYE_RIGHT:      { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 104 * Math.PI/180 ), y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
-            EYE_LEFT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.cos( 76 * Math.PI/180 ),  y: Math.sin( 30 * Math.PI/180 ), z: Math.cos( 30 * Math.PI/180 ) },
+            EYEBROWS_LINE:  { dx: Math.sin( 20 * Math.PI/180 ), x: 0, y: Math.sin( 25 * Math.PI/180 ), z: Math.cos( 25 * Math.PI/180 ), srcBone: "Head", srcBoneY: "LEye" },
+            EYEBROW_RIGHT:  { dx: Math.cos( 70 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ), srcBone: "REye" },
+            EYEBROW_LEFT:   { dx: Math.cos( 70 * Math.PI/180 ), x: 0, y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 35 * Math.PI/180 ), srcBone: "LEye" },
+            EYES_LINE:      { dx: Math.sin( 20 * Math.PI/180 ), x: 0, y: 0, z: 1, srcBone: "Head", srcBoneY: "LEye" },
+            EYE_RIGHT:      { dx: Math.cos( 60 * Math.PI/180 ), x: 0, y: 0, z: 1, srcBone: "REye" },
+            EYE_LEFT:       { dx: Math.cos( 60 * Math.PI/180 ), x: 0, y: 0, z: 1, srcBone: "LEye" },
+            
+            EAR_RIGHT:      { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -135 * Math.PI/180 ), y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -135 * Math.PI/180 ), srcBone: "Head", srcBoneY: "REye" },
+            EAR_LEFT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 135 * Math.PI/180 ), y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( 135 * Math.PI/180 ), srcBone: "Head", srcBoneY: "LEye" },
+            EARLOBE_RIGHT:  { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -135 * Math.PI/180 ), y: Math.sin( -35 * Math.PI/180 ), z: Math.cos( -135 * Math.PI/180 ), srcBone: "Head", srcBoneY: "REye" },
+            EARLOBE_LEFT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 135 * Math.PI/180 ), y: Math.sin( -35 * Math.PI/180 ), z: Math.cos( 135 * Math.PI/180 ), srcBone: "Head", srcBoneY: "LEye" },
 
-            EAR_RIGHT:      { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            EAR_LEFT:       { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 35 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
-            EARLOBE_RIGHT:  { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( -70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( -70 * Math.PI/180 ) },
-            EARLOBE_LEFT:   { dx: Math.cos( 85 * Math.PI/180 ), x: Math.sin( 70 * Math.PI/180 ), y: Math.sin( 10 * Math.PI/180 ), z: Math.cos( 70 * Math.PI/180 ) },
-
-            NOSE:           { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ) },
-            BELOW_NOSE:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ) },
-            CHEEK_RIGHT:    { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ) },
-            CHEEK_LEFT:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ) },
-            MOUTH:          { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1 },
-            CHIN:           { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ) },
-            UNDER_CHIN:     { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ) },
+            NOSE:           { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 15 * Math.PI/180 ), z: Math.cos( 15 * Math.PI/180 ), srcBone: "Head" },
+            BELOW_NOSE:     { dx: Math.cos( 85 * Math.PI/180 ), x: 0, y: Math.sin( 7 * Math.PI/180 ), z: Math.cos( 7 * Math.PI/180 ), srcBone: "Head" },
+            CHEEK_RIGHT:    { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( -30 * Math.PI/180 ), y: 0, z: Math.cos( -30 * Math.PI/180 ), srcBone: "Head" },
+            CHEEK_LEFT:     { dx: Math.cos( 80 * Math.PI/180 ), x: Math.sin( 30 * Math.PI/180 ), y: 0, z: Math.cos( 30 * Math.PI/180 ), srcBone: "Head" },
+            MOUTH:          { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: 0, z: 1, srcBone: "Head" },
+            CHIN:           { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -20 * Math.PI/180 ), z: Math.cos( -20 * Math.PI/180 ), srcBone: "Head" },
+            UNDER_CHIN:     { dx: Math.cos( 80 * Math.PI/180 ), x: 0, y: Math.sin( -30 * Math.PI/180 ), z: Math.cos( -30 * Math.PI/180 ), srcBone: "Head" },
         }
         
         // compute front, up, right in scene world coordinates. Use root as the one defining the rotation difference from bind
@@ -256,9 +241,9 @@ class Configurer {
         let worldY = this.worldY;
         let worldX = this.worldX;
 
-        let worldHeadPos = this.skeleton.bones[ this.boneMap[ "Head" ] ].getWorldPosition( new THREE.Vector3() );
+        let worldHeadPos = new THREE.Vector3();
         let worldDir = new THREE.Vector3(0,0,0); // direction for the ray
-
+        
         let sides = [ "_SideLL", "_SideL", "", "_SideR", "_SideRR" ]; // same as body
         // position of bone and direction to sample. World space
         for( let f in faceLocations ){
@@ -269,14 +254,19 @@ class Configurer {
             worldDir.y = localDir.x * worldX.y + localDir.y * worldY.y + localDir.z * worldZ.y;
             worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
             worldDir.normalize();
-
+            
+            worldHeadPos = this.skeleton.bones[ this.boneMap[ localDir.srcBone ] ].getWorldPosition( new THREE.Vector3() );
+            if (localDir.srcBoneY) {
+                worldHeadPos.y = this.skeleton.bones[ this.boneMap[ localDir.srcBoneY ] ].getWorldPosition( new THREE.Vector3() ).y;
+                worldHeadPos.z = this.skeleton.bones[ this.boneMap[ localDir.srcBoneY ] ].getWorldPosition( new THREE.Vector3() ).z;
+            }            
             let dirSidesXOffset = worldX.clone().multiplyScalar( localDir.dx );
             worldDir.add( dirSidesXOffset ).add( dirSidesXOffset ); // start at SideLL and iteratively go to SideRR
             
             for ( let i = 0; i < sides.length; ++i ){
                 // need to subtract worldY from direction. Only X-Z plane is desired. sphericalToEllipsoidal already does this.
                 // this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
-                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), worldDir.clone().set(worldDir.x,0,worldDir.z).normalize(), color ); //this.sphericalToEllipsoidal( worldDir ), color );
+                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ localDir.srcBone ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), worldDir.clone().set(worldDir.x,0,worldDir.z).normalize(), color ); //this.sphericalToEllipsoidal( worldDir ), color );
                 worldDir.sub( dirSidesXOffset );
             }
         }
@@ -501,10 +491,10 @@ class Configurer {
         this.raycaster.set( this.rayOr, this.rayDir );
         let intersections = this.raycaster.intersectObjects( this.model.children, true );
 
-        if( intersections && intersections.length ){          
+        if( intersections && intersections.length ){
             // many intersections may be returned (even arrowhelpers, gridhelpers). Take only meshes from the glb 
             for ( let i = 0; i < intersections.length; ++i ){
-                if ( intersections[i].object && ( intersections[i].object.isMesh || intersections[i].object.isSkinnedMesh ) ){ 
+                if ( intersections[i].object && ( intersections[i].object.isMesh || intersections[i].object.isSkinnedMesh ) && intersections[i].object.visible ){ 
                     return intersections[i].point.clone(); // intersection returns world space
                 }
             }
@@ -539,7 +529,7 @@ class Configurer {
 
 
 class ConfigPoint extends THREE.Group {
-    static _CT_SPHERE_SIZE = 0.01; 
+    static _CT_SPHERE_SIZE = 0.005; 
     constructor( configData ){
         super();
         let color = configData.color;
