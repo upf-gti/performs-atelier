@@ -183,7 +183,10 @@ class AUConfigurer {
         result["parts"] = {...this.partsMap};
 
         for (const part in result.parts) {
-            if ( !result.parts[part].length ) result.parts[part] = null;
+            if ( !result.parts[part].length ) {
+                result.parts[part] = null;
+                continue;
+            }
             result.parts[part] = [...new Set(result.parts[part])]
         }
         
