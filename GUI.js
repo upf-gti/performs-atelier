@@ -71,6 +71,7 @@ class AppGUI{
             panel.addButton(null, "Next", () => {
                 if (this.avatars[this.character] && this.avatars[this.character]["filePath"]) {
                     panel.clear(); this.initDialog.root.remove();
+                    $('#loading').fadeIn(); //show();
                     this.createPanel();
                 }
                 else {
