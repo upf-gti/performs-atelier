@@ -30,8 +30,9 @@ class AppGUI{
     }
 
     avatarSelect( panel ) {
-        this.avatars = {"Eva": {}, "From disk": {}};
+        this.avatars = {"Eva": {}, "Ada": {}, "From disk": {}};
         this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva_Low/Eva_Low.glb';  this.avatars["Eva"]["modelRotation"] = -Math.PI/2;
+        this.avatars["Ada"]["filePath"] = '/3Dcharacters/Ada/Ada.glb';  this.avatars["Ada"]["modelRotation"] = 0;
         this.avatars["From disk"]["modelRotation"] = 0;
 
         panel.refresh = () => {
@@ -40,6 +41,9 @@ class AppGUI{
             panel.addComboButtons("Choose Character", [
                 {
                 value: "Eva",
+                    callback: (value) => { this.character = value; panel.refresh(); }
+                }, {
+                value: "Ada",
                     callback: (value) => { this.character = value; panel.refresh(); }
                 }, {
                 value: "From disk",

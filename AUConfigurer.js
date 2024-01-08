@@ -118,6 +118,7 @@ class AUConfigurer {
             "dimpler": ["dimple"],
             "puckerer": ["pucker"],
             "funneler": ["whistle", "funnel"],
+            "wide": ["open"],
             "left": ["left", "_l"],
             "right": ["right", "_r"]
         };

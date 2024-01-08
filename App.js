@@ -31,13 +31,13 @@ class App {
         this.modelVisible = null;
 
         this.boneMap = {
-            "Head": null, "Neck": null, "ShouldersUnion": null, "Stomach": null,
+            "REye": null, "LEye": null, "Head": null, "Neck": null, "ShouldersUnion": null, "Stomach": null,
             "BelowStomach": null, "Hips": null, "RShoulder": null, "RArm": null,
             "RElbow": null, "RWrist": null, "RHandThumb": null, "RHandIndex": null,
             "RHandMiddle": null, "RHandRing": null, "RHandPinky": null, "LShoulder": null,
             "LArm": null, "LElbow": null, "LWrist": null, "LHandThumb": null, "LHandIndex": null,
-            "LHandMiddle": null, "LHandRing": null, "LHandPinky": null, "REye": null, "LEye": null
-       };
+            "LHandMiddle": null, "LHandRing": null, "LHandPinky": null
+        };
         this.sphereIk = null;
         this.miscMode = false;
         this.axis = new THREE.Vector3(1, 0, 0);
@@ -283,9 +283,9 @@ class App {
 			"REye":           "righteye",
             "Head":           "head",
             "Neck":           "neck",
-            "ShouldersUnion": "spine2", // aka chest
-            "Stomach":  	  "spine1",
-            "BelowStomach":   "spine",
+            "ShouldersUnion": "spine3", // chest
+            "Stomach":  	  "spine2",
+            "BelowStomach":   "spine1",
             "Hips":			  "hips",
             "RShoulder":      "rightshoulder",
             "RArm":           "rightarm",
@@ -313,9 +313,11 @@ class App {
 
         for (let i = 0; i < this.bones.length; i++) {
             for (const bone in boneMap) {
-                if ( this.bones[i].toLocaleLowerCase().includes( boneMap[bone] ) && !this.bones[i].toLocaleLowerCase().includes( "end" ) ) {
-                    if ( !this.boneMap[bone] ) this.boneMap[bone] = this.bones[i];
-                    break;
+                if ( this.bones[i].toLocaleLowerCase().includes( boneMap[bone] ) ) {
+                    if ( this.bones[i].toLocaleLowerCase().includes("eye") || !this.bones[i].toLocaleLowerCase().includes( "end" ) ) {
+                        if ( !this.boneMap[bone] ) this.boneMap[bone] = this.bones[i];
+                        break;
+                    }
                 }
             }
         }
