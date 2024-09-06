@@ -249,11 +249,20 @@ class Configurer {
         for( let f in faceLocations ){
             let color = Math.random() * 0xffffff;
             let localDir = faceLocations[ f ];
+
             //like a matrix multiplication...
-            worldDir.x = localDir.x * worldX.x + localDir.y * worldY.x + localDir.z * worldZ.x;
-            worldDir.y = localDir.x * worldX.y + localDir.y * worldY.y + localDir.z * worldZ.y;
-            worldDir.z = localDir.x * worldX.z + localDir.y * worldY.z + localDir.z * worldZ.z;
+            worldDir.set(0,0,0);
+            worldDir.addScaledVector( worldX, localDir.x );
+            worldDir.addScaledVector( worldY, localDir.y );
+            worldDir.addScaledVector( worldZ, localDir.z );
             worldDir.normalize();
+
+            let pointDir = new THREE.Vector3(0,0,0);
+            pointDir.addScaledVector( worldX, localDir.x );
+            // pointDir.addScaledVector( worldY, localDir.y );
+            pointDir.addScaledVector( worldZ, localDir.z < 0 ? 0 : localDir.z );
+            pointDir.normalize();
+
             
             worldHeadPos = this.skeleton.bones[ this.boneMap[ localDir.srcBone ] ].getWorldPosition( new THREE.Vector3() );
             if (localDir.srcBoneY) {
@@ -262,12 +271,14 @@ class Configurer {
             }            
             let dirSidesXOffset = worldX.clone().multiplyScalar( localDir.dx );
             worldDir.add( dirSidesXOffset ).add( dirSidesXOffset ); // start at SideLL and iteratively go to SideRR
+            pointDir.add( dirSidesXOffset ).add( dirSidesXOffset ); // start at SideLL and iteratively go to SideRR
             
             for ( let i = 0; i < sides.length; ++i ){
                 // need to subtract worldY from direction. Only X-Z plane is desired. sphericalToEllipsoidal already does this.
                 // this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ "Head" ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), this.sphericalToEllipsoidal( worldDir ), color );
-                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ localDir.srcBone ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), worldDir.clone().set(worldDir.x,0,worldDir.z).normalize(), color ); //this.sphericalToEllipsoidal( worldDir ), color );
+                this.createBodyPoint( f + sides[i], this.skeleton.bones[ this.boneMap[ localDir.srcBone ] ].name, worldHeadPos, this.doRaycast( worldHeadPos, worldDir, true ), pointDir.normalize(), color ); //this.sphericalToEllipsoidal( worldDir ), color );
                 worldDir.sub( dirSidesXOffset );
+                pointDir.sub( dirSidesXOffset );
             }
         }
     }
@@ -743,7 +754,7 @@ class ConfigurerHelper {
     commitEdit(){
         if ( this.editModeData.pointSelected ){ 
             this.editModeData.pointSelected.setPos( this.editModeData.p.getPos() );
-            this.editModeData.pointSelected.setDir( this.configurer.sphericalToEllipsoidal( this.editModeData.p.getDir() ) );
+            this.editModeData.pointSelected.setDir( this.editModeData.p.getDir() );
         }
         return this.cancelEdit();
     }
