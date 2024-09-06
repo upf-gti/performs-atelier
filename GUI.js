@@ -31,9 +31,11 @@ class AppGUI{
 
     avatarSelect( panel ) {
         this.avatars = {"Eva": {}, "Ada": {}, "From disk": {}};
-        this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva_Low/Eva_Low.glb';  this.avatars["Eva"]["modelRotation"] = -Math.PI/2;
-        this.avatars["Ada"]["filePath"] = '/3Dcharacters/Ada/Ada.glb';  this.avatars["Ada"]["modelRotation"] = 0;
+        this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva_Low/Eva_Low.glb'; this.avatars["Eva"]["modelRotation"] = 0;
+        this.avatars["Ada"]["filePath"] = '/3Dcharacters/Ada/Ada.glb'; this.avatars["Ada"]["modelRotation"] = 0;
         this.avatars["From disk"]["modelRotation"] = 0;
+
+        this.avatarName = "";
 
         panel.refresh = () => {
             panel.clear();
@@ -41,10 +43,10 @@ class AppGUI{
             panel.addComboButtons("Choose Character", [
                 {
                 value: "Eva",
-                    callback: (value) => { this.character = value; panel.refresh(); }
+                    callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
                 }, {
                 value: "Ada",
-                    callback: (value) => { this.character = value; panel.refresh(); }
+                    callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
                 }, {
                 value: "From disk",
                     callback: (value) => { this.character = value; this.avatars["From disk"]["filePath"] = null; panel.refresh(); }
@@ -54,6 +56,7 @@ class AppGUI{
             if (this.character === "From disk") {
                 panel.addFile("Avatar File", (v, e) => {
                     this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
+                    this.avatarName = this.avatarFile.split(".")[0];
                     let extension = this.avatarFile.split(".")[1];
                     if (extension == "glb" || extension == "gltf") { this.avatars["From disk"]["filePath"] = v; }
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
@@ -468,6 +471,24 @@ class AppGUI{
                 }
                 this.config.shoulderHunch = value.map((x) => x * Math.PI / 180);
             });
+
+            // Example Images of Arm Angles Result:
+            let info = 
+            "Find attached below an example of how the resulting position with the arm angles adjusted should look like:";
+            panel.addTextArea(null, info, null, {disabled: true, fitHeight: true});
+ 
+            let img = document.createElement("img");
+            img.src = "./data/imgs/miscellaneous/Arm Angles Example 1.png";
+            img.height = 300;
+            panel.branches[1].content.appendChild(img);
+            let img2 = document.createElement("img");
+            img2.src = "./data/imgs/miscellaneous/Arm Angles Example 2.png";
+            img2.height = 300;
+            panel.branches[1].content.appendChild(img2);
+            let img3 = document.createElement("img");
+            img3.src = "./data/imgs/miscellaneous/Arm Angles Example 3.png";
+            img3.height = 300;
+            panel.branches[1].content.appendChild(img3);
         };
         panel.refresh();
     }
@@ -500,7 +521,7 @@ class AppGUI{
                 document.body.appendChild(downloadAnchorNode); // required for firefox
                 downloadAnchorNode.click();
                 downloadAnchorNode.remove();
-            }, {input: "Config", required: true});
+            }, {input: this.avatarName, required: true});
         });
 
         panel.merge();

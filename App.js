@@ -187,7 +187,7 @@ class App {
             model.traverse( (object) => {
                 if ( object.isMesh || object.isSkinnedMesh ) {
                     if ( object.isSkinnedMesh ){ skeleton = object.skeleton; }
-                    object.material.side = THREE.DoubleSide; //needed for raycaster
+                    // object.material.side = THREE.DoubleSide; //needed for raycaster
                     object.frustumCulled = false;
                     object.castShadow = true;
                     object.receiveShadow = true;
