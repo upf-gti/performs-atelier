@@ -34,6 +34,37 @@ class AppGUI{
         this.avatars["Eva"]["filePath"] = '/3Dcharacters/Eva_Low/Eva_Low.glb'; this.avatars["Eva"]["modelRotation"] = 0;
         this.avatars["Ada"]["filePath"] = '/3Dcharacters/Ada/Ada.glb'; this.avatars["Ada"]["modelRotation"] = 0;
         this.avatars["From disk"]["modelRotation"] = 0;
+        
+        document.addEventListener('drop', (e) => {
+            if(e.target == document.getElementsByTagName("input")[1] || e.target == document.getElementsByTagName("input")[2]) {
+                return;
+            }
+            e.preventDefault();
+			e.stopPropagation();
+            
+            const files = e.dataTransfer.files; 
+            if(!files.length)
+                return;
+            
+            this.character = "From disk"; 
+            panel.refresh();
+            const event = new Event('change');
+            for(let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const extension = file.name.substr(file.name.lastIndexOf(".") + 1);
+                let element = null;
+                if (extension == "glb" || extension == "gltf") {
+                    element = document.getElementsByTagName("input")[1];                    
+                }
+                else if(extension == "json") {
+                    element = document.getElementsByTagName("input")[2];                    
+                }
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file)
+                element.files = dataTransfer.files;
+                element.dispatchEvent(event);
+            }
+        });
 
         this.avatarName = "";
 
@@ -55,6 +86,9 @@ class AppGUI{
 
             if (this.character === "From disk") {
                 panel.addFile("Avatar File", (v, e) => {
+                    if(!document.getElementsByTagName("input")[1].files.length) {
+                        return;
+                    }
                     this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
                     this.avatarName = this.avatarFile.split(".")[0];
                     let extension = this.avatarFile.split(".")[1];
@@ -62,6 +96,9 @@ class AppGUI{
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
                 }, {type: "url"});
                 panel.addFile("Config File (optional)", (v) => {
+                    if(!document.getElementsByTagName("input")[1].files.length) {
+                        return;
+                    }
                     let extension = document.getElementsByTagName("input")[2].files[0].name.split(".")[1];
                     if (extension == "json") { this.configFile = JSON.parse(v); }
                     else { LX.popup("Config file must be a JSON!"); }
@@ -309,7 +346,13 @@ class AppGUI{
         
         panel.branch("Map Blendshapes", {icon: "fa-regular fa-face-smile-wink"});
         
-        panel.addDropdown("Action Unit", Object.keys(this.app.facial_configurer.blendshapeMap), undefined, (auName) => {
+        const url = "https://webglstudio.org/projects/signon/animics";
+        const actionUnits = Object.keys(this.app.facial_configurer.blendshapeMap);
+        const values = [];
+        for(let i = 0; i < actionUnits.length; i++) {
+            values.push({ value: actionUnits[i], src: url +"/data/imgs/thumbnails/face lexemes/" + actionUnits[i].toLowerCase().replaceAll('_', ' ') + ".png" })
+        }
+        panel.addDropdown("Action Unit", values, undefined, (auName) => {
             if ( !this.AUmap[auName] ) { this.AUmap[auName] = []; }
             
             // remove previous au branch
@@ -321,7 +364,7 @@ class AppGUI{
             
             // create branch
             panel.branch(auName, {icon: "fa-regular fa-face-smile-wink"});
-            
+            panel.addImage(url +"/data/imgs/thumbnails/face lexemes/" + auName.toLowerCase().replaceAll('_', ' ') + ".png" , {style: {width: "100%"}});
             panel.addButton(null, "Add Blendshape", ()=>{
                 panel.sameLine();
                 let m = this.addBlendshape(panel, auName);
