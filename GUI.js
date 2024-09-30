@@ -85,32 +85,24 @@ class AppGUI{
             ], {selected: this.character});
 
             if (this.character === "From disk") {
-
                 panel.addFile("Avatar File", (v, e) => {
-
-                    this.avatarFile = panel.widgets["Avatar File"].domEl.children[1].files;
-                    if (!this.avatarFile.length) {
+                    if(!document.getElementsByTagName("input")[1].files.length) {
                         return;
                     }
-                    
-                    this.avatarName = this.avatarFile[0].name.split(".")[0];
-                    let extension = this.avatarFile[0].name.split(".")[1];
-
-                    if (extension == "glb" || extension == "gltf") {
-                        this.avatars["From disk"]["filePath"] = v;
-                    }
+                    this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
+                    this.avatarName = this.avatarFile.split(".")[0];
+                    let extension = this.avatarFile.split(".")[1];
+                    if (extension == "glb" || extension == "gltf") { this.avatars["From disk"]["filePath"] = v; }
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
-                    
                 }, {type: "url"});
-
                 panel.addFile("Config File (optional)", (v) => {
-
-                    let extension = panel.widgets["Config File (optional)"].domEl.children[1].files[0].name.split(".")[1];
+                    if(!document.getElementsByTagName("input")[1].files.length) {
+                        return;
+                    }
+                    let extension = document.getElementsByTagName("input")[2].files[0].name.split(".")[1];
                     if (extension == "json") { this.configFile = JSON.parse(v); }
                     else { LX.popup("Config file must be a JSON!"); }
-
                 }, {type: "text"});
-                
                 panel.addNumber("Apply Rotation", 0, (v) => {
                     this.avatars["From disk"]["modelRotation"] = v * Math.PI / 180;
                 }, { min: -180, max: 180, step: 1 } );
@@ -126,41 +118,6 @@ class AppGUI{
                     LX.popup("Select an avatar!");
                 }
             });
-
-            panel.root.addEventListener("drop", (v, e) => {
-
-                let files = v.dataTransfer.files;
-                if(!files.length) {
-                    return;
-                }
-                for(let i = 0; i < files.length; i++) {
-
-                    const path = files[i].name.split(".");
-                    const extension = path[1];
-                    if (extension == "glb" || extension == "gltf") { 
-                        // Create a data transfer object
-                        const dataTransfer = new DataTransfer();
-                        // Add file to the file list of the object
-                        dataTransfer.items.add(files[i]);
-                        // Save the file list to a new variable
-                        const fileList = dataTransfer.files;
-                        panel.widgets["Avatar File"].domEl.children[1].files = fileList;
-                        panel.widgets["Avatar File"].domEl.children[1].dispatchEvent(new Event('change'), { bubbles: true });
-                    }
-                    else if (extension == "json") { 
-                        // Create a data transfer object
-                        const dataTransfer = new DataTransfer();
-                        // Add file to the file list of the object
-                        dataTransfer.items.add(files[i]);
-                        // Save the file list to a new variable
-                        const fileList = dataTransfer.files;
-                        panel.widgets["Config File (optional)"].domEl.children[1].files = fileList;
-                        panel.widgets["Config File (optional)"].domEl.children[1].dispatchEvent(new Event('change'), { bubbles: true });
-
-                        //config = JSON.parse(files[i]); 
-                    }
-                }
-            })
         }
         panel.refresh();
     }
