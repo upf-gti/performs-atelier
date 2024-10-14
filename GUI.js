@@ -16,7 +16,7 @@ class AppGUI{
         this.gui = null;
         
         this.bones = [];
-        this.configFile = {};
+        this.configFile = null;
         this.config = { shoulderRaise: [0,0,0], shoulderHunch: [0,0,0], elbowRaise: 0 };
         this.partsMap = {};
         
@@ -68,48 +68,221 @@ class AppGUI{
 
         this.avatarName = "";
 
+        let afromFile = true;
+        let cfromFile = true;
         panel.refresh = () => {
             panel.clear();
             
-            panel.addComboButtons("Choose Character", [
-                {
-                value: "Eva",
-                    callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
-                }, {
-                value: "Ada",
-                    callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
-                }, {
-                value: "From disk",
-                    callback: (value) => { this.character = value; this.avatars["From disk"]["filePath"] = null; panel.refresh(); }
-                }
-            ], {selected: this.character});
+            // panel.addComboButtons("Choose Character", [
+            //     {
+            //     value: "Eva",
+            //         callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
+            //     }, {
+            //     value: "Ada",
+            //         callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
+            //     }, {
+            //     value: "From disk",
+            //         callback: (value) => { this.character = value; this.avatars["From disk"]["filePath"] = null; panel.refresh(); }
+            //     }
+            // ], {selected: this.character});
 
-            if (this.character === "From disk") {
-                panel.addFile("Avatar File", (v, e) => {
-                    if(!document.getElementsByTagName("input")[1].files.length) {
+            panel.sameLine();
+                let avatarFile = panel.addFile("Avatar File", (v, e) => {
+                    let files = panel.widgets["Avatar File"].domEl.children[1].files;
+                    if(!files.length) {
                         return;
                     }
-                    this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
-                    this.avatarName = this.avatarFile.split(".")[0];
-                    let extension = this.avatarFile.split(".")[1];
-                    if (extension == "glb" || extension == "gltf") { this.avatars["From disk"]["filePath"] = v; }
+                    const path = files[0].name.split(".");
+                    const filename = path[0];
+                    const extension = path[1];
+                    if (extension == "glb" || extension == "gltf") { 
+                        this.avatarName = this.character = filename;
+                        this.avatarFile = v;
+                        this.avatars[filename] = {"filePath": path};
+                    }
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
-                }, {type: "url"});
-                panel.addFile("Config File (optional)", (v) => {
-                    if(!document.getElementsByTagName("input")[1].files.length) {
+                }, {type: "url", nameWidth: "41%"});
+
+                if(!afromFile) {
+                    avatarFile.domEl.classList.add('hidden');
+                }
+
+                let avatarURL = panel.addText("Avatar URL", this.avatarFile, (v, e) => {
+                    if(v == this.avatarFile) {
                         return;
                     }
-                    let extension = document.getElementsByTagName("input")[2].files[0].name.split(".")[1];
-                    if (extension == "json") { this.configFile = JSON.parse(v); }
-                    else { LX.popup("Config file must be a JSON!"); }
-                }, {type: "text"});
-                panel.addNumber("Apply Rotation", 0, (v) => {
-                    this.avatars["From disk"]["modelRotation"] = v * Math.PI / 180;
-                }, { min: -180, max: 180, step: 1 } );
-            }
+                    if(!v) {
+                        this.avatarFile = v;
+                        return;
+                    }
 
-            panel.addButton(null, "Next", () => {
+                    const path = v.split(".");
+                    let filename = path[path.length-2];
+                    filename = filename.split("/");
+                    filename = filename.pop();
+                    let extension = path[path.length-1];
+                    extension = extension.split("?")[0];
+                    if (extension == "glb" || extension == "gltf") { 
+                        this.avatarName = this.character = filename;
+                        this.avatarFile = v;      
+                        this.avatars[filename] = {"filePath": v};                       
+                    }
+                    else { LX.popup("Only accepts GLB and GLTF formats!"); }
+                }, {nameWidth: "43%"});
+                if(afromFile) {
+                    avatarURL.domEl.classList.add('hidden');
+                }
+
+                panel.addComboButtons(null, [
+                    {
+                        value: "From File",
+                        callback: (v, e) => {                            
+                            afromFile = true;
+                            if(!avatarURL.domEl.classList.contains('hidden')) {
+                                avatarURL.domEl.classList.add('hidden');          
+                            }
+                            avatarFile.domEl.classList.remove('hidden');                                                          
+                            panel.refresh();
+                        }
+                    },
+                    {
+                        value: "From URL",
+                        callback: (v, e) => {
+                            afromFile = false;
+                            if(!avatarFile.domEl.classList.contains('hidden')) {
+                                avatarFile.domEl.classList.add('hidden');           
+                            }                                               
+                            avatarURL.domEl.classList.remove('hidden');          
+                        }
+                    }
+                ], {selected: afromFile ? "From File" : "From URL", width: "170px", minWidth: "0px"});                
+                panel.endLine();
+            
+                panel.branch("Optional");
+
+                panel.sameLine();
+                let configFile = panel.addFile("Config File", (v, e) => {
+                
+                    const filename = panel.widgets["Config File"].domEl.children[1].files[0].name;
+                    let extension = filename.split(".");
+                    extension = extension.pop();
+                    if (extension == "json") { 
+                        this.configFile = JSON.parse(v); 
+                        this.configFile._filename = filename; 
+                    }
+                    else { LX.popup("Config file must be a JSON!"); }
+                }, {type: "text", nameWidth: "41%"});
+                
+                let configURL = panel.addText("Config URL", this.configFile ? this.configFile._filename : "", async (v, e) => {
+                    if(!v) {
+                        return;
+                    }
+                    const path = v.split(".");
+                    let filename = path[path.length-2];
+                    filename = filename.split("/");
+                    filename = filename.pop();
+                    let extension = path[path.length-1];
+                    extension = extension.split("?")[0].toLowerCase();
+                    if (extension == "json") { 
+                        if (extension == "json") { 
+                            try {
+                                const response = await fetch(v);
+                                if (!response.ok) {
+                                    throw new Error(`Response status: ${response.status}`);
+                                }
+                                this.configFile = await response.json();                        
+                                this.configFile._filename = v; 
+                            }
+                            catch (error) {
+                                LX.popup(error.message, "File error!");
+                            }
+                        }
+                    }
+                    else { LX.popup("Config file must be a JSON!"); }
+                }, {nameWidth: "43%"});
+
+                if(cfromFile) {
+                    configURL.domEl.classList.add('hidden');
+                }else {
+                    configFile.domEl.classList.add('hidden');
+                }
+                panel.addComboButtons(null, [
+                    {
+                        value: "From File",
+                        callback: (v, e) => {                            
+                            cfromFile = true;
+                            // panel.refresh();
+                            if(!configURL.domEl.classList.contains('hidden')) {
+                                configURL.domEl.classList.add('hidden');          
+                            }
+                            configFile.domEl.classList.remove('hidden');                                                          
+                        }
+                    },
+                    {
+                        value: "From URL",
+                        callback: (v, e) => {
+                            cfromFile = false;
+                            // panel.refresh();
+                            if(!configFile.domEl.classList.contains('hidden')) {
+                                configFile.domEl.classList.add('hidden');           
+                            }                                               
+                            configURL.domEl.classList.remove('hidden');  
+                        }
+                    }
+                ], {selected: cfromFile ? "From File" : "From URL", width: "170px", minWidth: "0px"});
+                panel.endLine();
+                panel.merge();
+            // if (this.character === "From disk") {
+            //     panel.addFile("Avatar File", (v, e) => {
+            //         if(!document.getElementsByTagName("input")[1].files.length) {
+            //             return;
+            //         }
+            //         this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
+            //         this.avatarName = this.avatarFile.split(".")[0];
+            //         let extension = this.avatarFile.split(".")[1];
+            //         if (extension == "glb" || extension == "gltf") { this.avatars["From disk"]["filePath"] = v; }
+            //         else { LX.popup("Only accepts GLB and GLTF formats!"); }
+            //     }, {type: "url"});
+            //     panel.addFile("Config File (optional)", (v) => {
+            //         if(!document.getElementsByTagName("input")[1].files.length) {
+            //             return;
+            //         }
+            //         let extension = document.getElementsByTagName("input")[2].files[0].name.split(".")[1];
+            //         if (extension == "json") { this.configFile = JSON.parse(v); }
+            //         else { LX.popup("Config file must be a JSON!"); }
+            //     }, {type: "text"});
+            //     panel.addNumber("Apply Rotation", 0, (v) => {
+            //         this.avatars["From disk"]["modelRotation"] = v * Math.PI / 180;
+            //     }, { min: -180, max: 180, step: 1 } );
+            // }
+            panel.addNumber("Apply Rotation", 0, (v) => {
+                this.avatars[this.avatarName]["modelRotation"] = v * Math.PI / 180;
+            }, { min: -180, max: 180, step: 1 } );
+
+            panel.addButton(null, "Next", async () => {
                 if (this.avatars[this.character] && this.avatars[this.character]["filePath"]) {
+                    if( typeof(this.avatars[this.character]["filePath"]) == 'string' && this.avatars[this.character]["filePath"].includes('models.readyplayer.me') ) {
+                        this.avatars[this.character]["filePath"]+= '?pose=T&morphTargets=ARKit&lod=1';
+                        if(!this.configFile) {
+                            try {
+                                const response = await fetch("https://webglstudio.org/3Dcharacters/ReadyEva/ReadyEva.json");
+                                if (!response.ok) {
+                                    throw new Error(`Response status: ${response.status}`);
+                                }
+                                this.configFile = await response.json();                        
+                                this.configFile._filename = v; 
+                            }
+                            catch (error) {
+                                //LX.popup(error.message, "File error!");
+                            }
+                        }
+                    }
+                    if(!this.avatars[this.avatarName]["modelRotation"]) {
+                        this.avatars[this.avatarName]["modelRotation"] = 0;
+                    }
+                    if(!this.configFile) {
+                        this.configFile = {};
+                    }
                     panel.clear(); this.initDialog.root.remove();
                     $('#loading').fadeIn(); //show();
                     this.createPanel();
@@ -117,7 +290,7 @@ class AppGUI{
                 else {
                     LX.popup("Select an avatar!");
                 }
-            });
+            }, {className: "next-button"});
         }
         panel.refresh();
     }

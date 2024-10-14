@@ -181,8 +181,7 @@ class App {
     }
 
     loadVisibleModel(filePath, modelRotation, callback = null) {
-        this.loaderGLB.load( filePath , (glb) => {
-            let model = this.modelVisible = glb.scene;
+        const innerCallback = (model) => {
             let skeleton = null;
             model.traverse( (object) => {
                 if ( object.isMesh || object.isSkinnedMesh ) {
@@ -212,13 +211,22 @@ class App {
             if (callback){ callback(); }
 
             skeleton.pose();
-        })
+        }
+        if(typeof(filePath) == 'string') {
+            this.loaderGLB.load( filePath , (glb) => {
+                let model = this.modelVisible = glb.scene;
+                innerCallback(model);
+            })
+        }
+        else {
+            let model = this.modelVisible = filePath.model;
+            innerCallback(model);
+        }
     }
 
     loadConfigModel(filePath, modelRotation, callback = null) {
-        this.loaderGLB.load( filePath , (glb) => {
-            let model = this.model1 = glb.scene;
-            this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
+
+        const innerCallback = (model) => {
             model.traverse( (object) => {
                 if ( object.isMesh || object.isSkinnedMesh ) {
                     if ( object.isSkinnedMesh ){ this.skeleton = object.skeleton;  object.isMesh = true; object.isSkinnedMesh = false; }
@@ -281,8 +289,21 @@ class App {
             if (callback){ callback(); }
             this.animate();
             $('#loading').fadeOut(); //hide();
+        }
+
+        if(typeof(filePath) == 'string') {
+            this.loaderGLB.load( filePath , (glb) => {
+                let model = this.model1 = glb.scene;
+                this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
+                innerCallback(model);            
+            });
+        }
+        else {
             
-        });
+            let model = this.model1 = filePath.model;
+            this.modelFileName = filePath.name;
+            innerCallback(model);
+        }
     }
 
     autoMapBones() {
