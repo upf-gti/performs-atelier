@@ -36,9 +36,9 @@ class AppGUI{
         this.avatars["From disk"]["modelRotation"] = 0;
         
         document.addEventListener('drop', (e) => {
-            if(e.target == document.getElementsByTagName("input")[1] || e.target == document.getElementsByTagName("input")[2]) {
-                return;
-            }
+            // if(e.target == panel.widgets["Avatar File"].domEl || e.target == panel.widgets["Config File"].domEl.getElementsByTagName('input')[0]) {
+            //     return;
+            // }
             e.preventDefault();
 			e.stopPropagation();
             
@@ -54,10 +54,10 @@ class AppGUI{
                 const extension = file.name.substr(file.name.lastIndexOf(".") + 1);
                 let element = null;
                 if (extension == "glb" || extension == "gltf") {
-                    element = document.getElementsByTagName("input")[1];                    
+                    element = panel.widgets["Avatar File"].domEl.getElementsByTagName('input')[0];                    
                 }
                 else if(extension == "json") {
-                    element = document.getElementsByTagName("input")[2];                    
+                    element = panel.widgets["Config File"].domEl.getElementsByTagName('input')[0];                    
                 }
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file)
@@ -98,7 +98,7 @@ class AppGUI{
                     if (extension == "glb" || extension == "gltf") { 
                         this.avatarName = this.character = filename;
                         this.avatarFile = v;
-                        this.avatars[filename] = {"filePath": path};
+                        this.avatars[filename] = {"filePath": v};
                     }
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
                 }, {type: "url", nameWidth: "41%"});
@@ -232,29 +232,7 @@ class AppGUI{
                 ], {selected: cfromFile ? "From File" : "From URL", width: "170px", minWidth: "0px"});
                 panel.endLine();
                 panel.merge();
-            // if (this.character === "From disk") {
-            //     panel.addFile("Avatar File", (v, e) => {
-            //         if(!document.getElementsByTagName("input")[1].files.length) {
-            //             return;
-            //         }
-            //         this.avatarFile = document.getElementsByTagName("input")[1].files[0].name;
-            //         this.avatarName = this.avatarFile.split(".")[0];
-            //         let extension = this.avatarFile.split(".")[1];
-            //         if (extension == "glb" || extension == "gltf") { this.avatars["From disk"]["filePath"] = v; }
-            //         else { LX.popup("Only accepts GLB and GLTF formats!"); }
-            //     }, {type: "url"});
-            //     panel.addFile("Config File (optional)", (v) => {
-            //         if(!document.getElementsByTagName("input")[1].files.length) {
-            //             return;
-            //         }
-            //         let extension = document.getElementsByTagName("input")[2].files[0].name.split(".")[1];
-            //         if (extension == "json") { this.configFile = JSON.parse(v); }
-            //         else { LX.popup("Config file must be a JSON!"); }
-            //     }, {type: "text"});
-            //     panel.addNumber("Apply Rotation", 0, (v) => {
-            //         this.avatars["From disk"]["modelRotation"] = v * Math.PI / 180;
-            //     }, { min: -180, max: 180, step: 1 } );
-            // }
+            
             panel.addNumber("Apply Rotation", 0, (v) => {
                 this.avatars[this.avatarName]["modelRotation"] = v * Math.PI / 180;
             }, { min: -180, max: 180, step: 1 } );
@@ -269,8 +247,8 @@ class AppGUI{
                                 if (!response.ok) {
                                     throw new Error(`Response status: ${response.status}`);
                                 }
-                                this.configFile = await response.json();                        
-                                this.configFile._filename = v; 
+                                const config = await response.json();                        
+                                this.configFile = {boneMap: config.boneMap};
                             }
                             catch (error) {
                                 //LX.popup(error.message, "File error!");
@@ -360,6 +338,10 @@ class AppGUI{
         for (const part in this.app.boneMap) {
             if ((i % 2) == 0) panel.sameLine(2);
             i++;
+            if(typeof(this.app.boneMap[part]) == 'number') {
+                this.app.boneMap[part] = this.bones[this.app.boneMap[part]]
+            } 
+                
             panel.addDropdown(part, this.bones, this.app.boneMap[part], (value, event) => {
                 this.app.boneMap[part] = value;
             }, {filter: true});

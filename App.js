@@ -147,11 +147,26 @@ class App {
         this.renderer.render( this.scene, this.camera );
 
         if ( typeof AppGUI != "undefined" ) { this.gui = new AppGUI( this ); }
-        
+
+        //if there's data about the character in the local storage (from Performs), use it and skip the load files dialog
+        if(localStorage.getItem("atelierData")) {
+            const [name, model, config, rotation] = JSON.parse(localStorage.getItem("atelierData"));
+            this.gui.character =  this.gui.avatarName = name;
+            this.gui.avatars[name] = {
+                "filePath": model,
+                "modelRotation": rotation
+            }
+            this.gui.configFile = config;
+            this.gui.initDialog.root.getElementsByClassName("next-button")[0].getElementsByTagName("button")[0].click();
+            this.gui.initDialog.destroy();
+            localStorage.removeItem("atelierData");
+        }
+        else {
+            $('#loading').fadeOut(); //hide();
+        }
+
         window.addEventListener( 'resize', this.onResize.bind( this ) );
         this.renderer.domElement.addEventListener( 'resize', this.onResize.bind( this ) );
-
-        $('#loading').fadeOut(); //hide();
 
     }
 
@@ -181,7 +196,9 @@ class App {
     }
 
     loadVisibleModel(filePath, modelRotation, callback = null) {
-        const innerCallback = (model) => {
+              
+        this.loaderGLB.load( filePath , (glb) => {
+            let model = this.modelVisible = glb.scene;
             let skeleton = null;
             model.traverse( (object) => {
                 if ( object.isMesh || object.isSkinnedMesh ) {
@@ -211,22 +228,14 @@ class App {
             if (callback){ callback(); }
 
             skeleton.pose();
-        }
-        if(typeof(filePath) == 'string') {
-            this.loaderGLB.load( filePath , (glb) => {
-                let model = this.modelVisible = glb.scene;
-                innerCallback(model);
-            })
-        }
-        else {
-            let model = this.modelVisible = filePath.model;
-            innerCallback(model);
-        }
+        })
     }
 
     loadConfigModel(filePath, modelRotation, callback = null) {
-
-        const innerCallback = (model) => {
+        
+        this.loaderGLB.load( filePath , (glb) => {
+            let model = this.model1 = glb.scene;
+            this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
             model.traverse( (object) => {
                 if ( object.isMesh || object.isSkinnedMesh ) {
                     if ( object.isSkinnedMesh ){ this.skeleton = object.skeleton;  object.isMesh = true; object.isSkinnedMesh = false; }
@@ -288,22 +297,8 @@ class App {
             });
             if (callback){ callback(); }
             this.animate();
-            $('#loading').fadeOut(); //hide();
-        }
-
-        if(typeof(filePath) == 'string') {
-            this.loaderGLB.load( filePath , (glb) => {
-                let model = this.model1 = glb.scene;
-                this.modelFileName = filePath.slice( filePath.lastIndexOf( "/" ) + 1 );
-                innerCallback(model);            
-            });
-        }
-        else {
-            
-            let model = this.model1 = filePath.model;
-            this.modelFileName = filePath.name;
-            innerCallback(model);
-        }
+            $('#loading').fadeOut(); //hide();         
+        });        
     }
 
     autoMapBones() {
