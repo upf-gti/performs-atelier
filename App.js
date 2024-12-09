@@ -4,7 +4,7 @@ import { TransformControls } from "three/addons/controls/TransformControls.js";
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Configurer, ConfigurerHelper } from './Configurer.js';
 import { AppGUI } from './GUI.js';
-import { findIndexOfBoneByName } from './Utils.js';
+import BoneMappingScene from './boneMapping.js';
 
 // Correct negative blenshapes shader of ThreeJS
 THREE.ShaderChunk[ 'morphnormal_vertex' ] = "#ifdef USE_MORPHNORMALS\n	objectNormal *= morphTargetBaseInfluence;\n	#ifdef MORPHTARGETS_TEXTURE\n		for ( int i = 0; i < MORPHTARGETS_COUNT; i ++ ) {\n	    objectNormal += getMorph( gl_VertexID, i, 1, 2 ) * morphTargetInfluences[ i ];\n		}\n	#else\n		objectNormal += morphNormal0 * morphTargetInfluences[ 0 ];\n		objectNormal += morphNormal1 * morphTargetInfluences[ 1 ];\n		objectNormal += morphNormal2 * morphTargetInfluences[ 2 ];\n		objectNormal += morphNormal3 * morphTargetInfluences[ 3 ];\n	#endif\n#endif";
@@ -48,6 +48,8 @@ class App {
         this.ik_configurer_left = null;
         this.configurerHelper = null;
         this.skeletonhelper = null;
+
+        this.boneMapScene = new BoneMappingScene(Object.keys(this.boneMap));  
     }
 
     init() {          
@@ -181,6 +183,8 @@ class App {
         this.elapsedTime += delta;
 
         if (this.configurerHelper) this.configurerHelper.update();
+        if (this.boneMapScene) this.boneMapScene.update();
+
         
         if (this.ik_configurer && this.miscMode) this.ik_configurer.reachTarget( this.sphereIk.position );
         if (this.ik_configurer_left && this.miscMode) this.ik_configurer_left.reachTarget( new THREE.Vector3( -this.sphereIk.position.x, this.sphereIk.position.y, this.sphereIk.position.z ) );

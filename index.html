@@ -33,6 +33,77 @@
             </div>
 		</div>
 
+        <div class="guide-modal hidden" id="atelier-guide-modal">
+            <!-- Modal 0: Introduction -->
+            <div class="container" id="atelier-modal0">
+                <span class="fa fa-xmark"></span>
+                <h2>Welcome to the Atelier!</h2>
+                <img src="https://iili.io/2BeAGwb.gif">
+                <p>Use Atelier to upload and configure your custom avatars. This tool helps you set up all the necessary parameters to create a configuration file that can be used with the Performs script animation system. </p>
+                <p>You can drag and drop your <strong>.GLB</strong> or <strong>.GLTF</strong> files or select <em>From URL</em>, and paste the link to your file.</p>
+                <button id="upload-avatar-button">Upload Avatar</button>
+            </div>
+            
+            <!-- Modal 1: Retargeting Bone Mapping -->
+            <div class="container hidden" id="atelier-modal1">
+                <span class="fa fa-xmark"></span>
+                <h2>Retargeting Bone Mapping</h2>
+                <p>
+                    Let's begin with bone mapping to ensure proper retargeting! The system automatically creates an initial mapping that you can adjust as needed.
+                </p>
+                <ul>
+                    <li>The source skeleton appears in blue and the target skeleton in white, with unmapped bones highlighted in yellow.</li>
+                    <li>Click a bone to highlight its match. Modify mappings by selecting a bone on one skeleton and assigning it to the other.</li>
+                    <li>Adjustments can also be made via a dropdown menu.</li>
+                </ul>
+                <p>Once completed, click Next.</p>
+                <button id="bone-mapping-next-button">Got it!</button>
+            </div>
+        
+            <!-- Modal 2: Body Locations -->
+            <div class="container hidden" id="atelier-modal2">
+                <span class="fa fa-xmark"></span>
+                <h2>Body Locations</h2>
+                <p>Hover over a point to see its name. Use <strong>Shift + Left-Click</strong> to move it and <strong>Alt + Left-Click</strong> to save its position.</p>
+                <ul>
+                    <li>Select editing modes to snap to the mesh, use translation gizmos, or adjust arrow rotation.</li>
+                    <li>Remove accessories to avoid interference with computations.</li>
+                </ul>
+                <p><strong>Warning: Changing the selection will erase your edits.</strong></p>
+                <p>Adjust bone mappings as needed before continuing.</p>
+                <button id="body-locations-next-button">Got it!</button>
+            </div>
+        
+            <!-- Modal 3: Action Units -->
+            <div class="container hidden" id="atelier-modal3">
+                <span class="fa fa-xmark"></span>
+                <h2>Action Units</h2>
+                <p>Map facial expressions with Action Units (AU) supported by our tools. Automatic mapping occurs with BlendShapes (BS), but you can:</p>
+                <ul>
+                    <li>Add or remove blendshapes.</li>
+                    <li>Adjust weight factors for precise expressions.</li>
+                    <li>Combine multiple blendshapes into a single Action Unit.</li>
+                </ul>
+                <p>A reference image is provided to guide you.</p>
+                <button id="au-next-button">Got it!</button>
+            </div>
+        
+            <!-- Modal 4: Miscellaneous -->
+            <div class="container hidden" id="atelier-modal4">
+                <span class="fa fa-xmark"></span>
+                <h2>Miscellaneous Settings</h2>
+                <h3>Arm Angles</h3>
+                <p>Fine-tune the avatar's arm movement with custom angle adjustments:</p>
+                <ul>
+                    <li><strong>Elbow Raise:</strong> Angle between the elbow and torso.</li>
+                    <li><strong>Shoulder Raise & Hunch:</strong> Adjust the shoulder's default angle, negative offset (min angle), and positive offset (max angle).</li>
+                </ul>
+                <p>Once finished, click Export to save your configuration.</p>
+                <button id="miscellaneous-next-button">Got it!</button>
+            </div>
+        </div>
+        
+
         <script src="./App.js" type="module"></script>
 
     </body>

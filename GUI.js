@@ -5,6 +5,14 @@ import { AUConfigurer } from "./AUConfigurer.js";
 import { GeometricArmIK } from "./GeometricArmIK.js";
 
 class AppGUI{
+    static GuideStage = {
+        WELCOME: 0,
+        BONE_MAPPING: 1,
+        BODY_LOCATIONS: 2,
+        ACTION_UNITS: 3,
+        MISCELLANEOUS: 4
+    };
+
     constructor( app ){
         this.app = app;
 
@@ -20,7 +28,9 @@ class AppGUI{
         this.config = { shoulderRaise: [0,0,0], shoulderHunch: [0,0,0], elbowRaise: 0 };
         this.partsMap = {};
         
-        this.initDialog = new LX.Dialog("Select an avatar", panel => {
+        this.showGuidedTour(AppGUI.GuideStage.WELCOME);
+
+        this.initDialog = new LX.Dialog("Upload avatar", panel => {
             this.avatarSelect(panel); 
         }, { size: ["40%"], closable: false });
     }
@@ -72,19 +82,6 @@ class AppGUI{
         let cfromFile = true;
         panel.refresh = () => {
             panel.clear();
-            
-            // panel.addComboButtons("Choose Character", [
-            //     {
-            //     value: "Eva",
-            //         callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
-            //     }, {
-            //     value: "Ada",
-            //         callback: (value) => { this.character = value; this.avatarName = value; panel.refresh(); }
-            //     }, {
-            //     value: "From disk",
-            //         callback: (value) => { this.character = value; this.avatars["From disk"]["filePath"] = null; panel.refresh(); }
-            //     }
-            // ], {selected: this.character});
 
             panel.sameLine();
                 let avatarFile = panel.addFile("Avatar File", (v, e) => {
@@ -232,10 +229,6 @@ class AppGUI{
                 ], {selected: cfromFile ? "From File" : "From URL", width: "170px", minWidth: "0px"});
                 panel.endLine();
                 panel.merge();
-            
-            panel.addNumber("Apply Rotation", 0, (v) => {
-                this.avatars[this.avatarName]["modelRotation"] = v * Math.PI / 180;
-            }, { min: -180, max: 180, step: 1 } );
 
             panel.addButton(null, "Next", async () => {
                 if (this.avatars[this.character] && this.avatars[this.character]["filePath"]) {
@@ -264,6 +257,7 @@ class AppGUI{
                     panel.clear(); this.initDialog.root.remove();
                     $('#loading').fadeIn(); //show();
                     this.createPanel();
+                    this.showGuidedTour(AppGUI.GuideStage.BONE_MAPPING);
                 }
                 else {
                     LX.popup("Select an avatar!");
@@ -321,79 +315,144 @@ class AppGUI{
                 this.app.skeleton.bones.forEach((obj) => { this.bones.push(obj.name); }); // get bone names of avatar
                 this.miscellaneous( this.panelC );
                 this.addExport(panelD);
-                
-                this.dialogClosable = new LX.Dialog("Bone Mapping", p => { this.boneMapping(p); }, { size: ["80%", "70%"], closable: false });
+
+                this.showBoneMapping();
             });
         });
     }
-    
-    boneMapping( panel ) {
-        let htmlStr = "Select the corresponding bone name of your avatar to match the provided list of bone names. An automatic selection is done, adjust if needed.";
-        panel.addTextArea(null, htmlStr, null, {disabled: true, fitHeight: true});
-        
+
+    showBoneMapping() {
+        if(this.dialog) {
+            this.dialog.close();
+        }
+        const areaMap = new LX.Area({width: "100%"});
+        const [area3D, areaPanel] = areaMap.split({type:'horizontal', sizes: ["50%", "50%"]});
+
+        const bonePanel = areaPanel.addPanel({id:"bone-panel"});
+
+        // fill automatically or from config file
         if ( this.configFile.boneMap ) { this.app.boneMap = this.configFile.boneMap; }
         else { this.app.autoMapBones(); }
+        
+        const bones = this.app.skeleton.bones;
+        let bonesName = [];
+        for(let i = 0; i < bones.length; i++) {
+            bonesName.push(bones[i].name);
+        }
+        const area = new LX.Area({width: "100%", height: "95%"});
+        const area2D = new LX.Area();
 
+        this.dialog = new LX.Dialog("Bone Mapping", panel => { 
+            
+            panel.root.appendChild(area.root);
+            
+            // 3D mapping
+            this.createBonePanel(bonePanel);
+            //2D mapping
+            const p = area2D.addPanel();
+            this.create2DPanel(p, bonesName);
+            
+            //panel.root.prepend(area.root);
+            const tabs = area.addTabs();
+            tabs.add("3D mapping", areaMap, {selected: true});
+            areaMap.root.style.display = "flex";
+            tabs.add("2D mapping", area2D, {onSelect: (e, name) => {
+                this.create2DPanel(p, bonesName);
+            }});
+
+            // next button
+            panel.addButton(null, "Next", () => { 
+                // make sure all bones are mapped
+                for (const bone in this.app.boneMap) {
+                    if ( !this.app.boneMap[bone] ) {
+                        LX.popup("All bones must be mapped!");
+                        return;
+                    }
+                }
+
+                panel.clear();
+                this.dialog.root.remove();
+
+                this.app.configurer.setBoneMap(this.app.boneMap);
+                
+                if (this.configFile.bodyController){
+                    this.app.configurer.computeAxes(this.configFile.bodyController.axes);
+                    this.app.configurer.setConfig(this.configFile.bodyController);
+                    this.config.elbowRaise = this.configFile.bodyController.elbowRaise * Math.PI / 180;    
+                    this.config.shoulderRaise = this.configFile.bodyController.shoulderRaise.map((x) => x * Math.PI / 180);    
+                    this.config.shoulderHunch = this.configFile.bodyController.shoulderHunch.map((x) => x * Math.PI / 180);    
+                }
+                else {
+                    this.app.configurer.computeAxes();
+                    this.app.configurer.computeConfig();
+                }
+
+                this.app.configurerHelper = new ConfigurerHelper( this.app.configurer, this.app.camera, this.app.renderer.domElement );
+                this.app.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.app.controls.enabled = !e.value; } );
+
+                this.app.renderer.domElement.addEventListener( "pointermove", (e)=>{
+                    this.app.configurerHelper.mouse.x = ( e.offsetX / this.app.renderer.domElement.parent.size[0] ) * 2 - 1;
+                    this.app.configurerHelper.mouse.y = - ( e.offsetY / this.app.renderer.domElement.parent.size[1] ) * 2 + 1;
+                    this.panelA.widgets["Point"].onSetValue( this.app.configurerHelper.getPointHovered() ? this.app.configurerHelper.getPointHovered().name : ( this.app.configurerHelper.getPointSelected() ? this.app.configurerHelper.getPointSelected().name : null) );
+                });
+
+                this.bodyLocations(this.panelA);
+
+                this.config.boneMap = JSON.parse( JSON.stringify( this.app.boneMap ) );
+                this.config.axes = this.app.configurer.getAxes();
+                this.app.ik_configurer = new GeometricArmIK(this.app.skeletonVisible, this.config, false);
+                this.config.boneMap = JSON.parse( JSON.stringify( this.app.boneMap ) );
+                this.app.ik_configurer_left = new GeometricArmIK(this.app.skeletonVisible, this.config, true);
+                
+                this.showGuidedTour(AppGUI.GuideStage.BODY_LOCATIONS);
+            }); // close dialog
+            panel.merge();
+
+
+        }, { size: ["80%", "70%"], closable: false });      
+        
+        //3D mapping 
+        this.app.boneMapScene.init(area3D.root, this.app.skeleton, this.app.boneMap, (bone) => { this.createBonePanel(bonePanel, bone, bonesName)});
+    }
+
+    create2DPanel(panel, bonesName) {
+        panel.clear();
+        const htmlStr = "Select the corresponding bone name of your avatar to match the provided list of bone names. An automatic selection is done, adjust if needed.";
+        panel.addTextArea(null, htmlStr, null, {disabled: true});
+        
         let i = 0;
         for (const part in this.app.boneMap) {
             if ((i % 2) == 0) panel.sameLine(2);
             i++;
-            if(typeof(this.app.boneMap[part]) == 'number') {
-                this.app.boneMap[part] = this.bones[this.app.boneMap[part]]
-            } 
-                
-            panel.addDropdown(part, this.bones, this.app.boneMap[part], (value, event) => {
-                this.app.boneMap[part] = value;
+            const widget = panel.addDropdown(part, bonesName, this.app.boneMap[part], (value, event) => {
+                this.app.boneMap[part] = value;                    
             }, {filter: true});
+            if(!this.app.boneMap[part]) {
+                widget.domEl.classList.add("warning");
+            }
+            widget.domEl.children[0].classList.add("source-color");
+            widget.domEl.children[1].classList.add("target-color");
+        }
+    }
+
+    createBonePanel(panel, bone, bonesName) {
+        panel.clear();
+        panel.branch("Retargeting bone map");
+        const s = "An automatic mapping is done, adjust if needed. Click on a bone to highlight its corresponding bone on the other skeleton. To edit it, select a bone on one skeleton with the left mouse button, then right-click on the other skeleton to assign a new corresponding bone. This can also be done using the dropdown menu. The source skeleton is displayed in blue, while the target skeleton is shown in white. Bones without a mapping are highlighted in yellow.";
+        panel.addTextArea(null, s, null, {disabled: true, fitHeight: true});
+        panel.addText("Source", "Target", null, {disabled: true});
+        if(bone) {
+            const widget = panel.addDropdown(bone.name, bonesName, this.app.boneMap[bone.name], (value, event) => {
+                this.app.boneMap[bone.name] = value;  
+                this.app.boneMapScene.onUpdateFromGUI(bone.name);                  
+            }, {filter: true});
+            if(!this.app.boneMap[bone.name]) {
+                widget.domEl.classList.add("warning");
+            }
+            widget.domEl.children[0].classList.add("source-color");
+            widget.domEl.children[1].classList.add("target-color");
         }
 
-        panel.addBlank(10);
-        
-        panel.addButton(null, "Next", () => { 
-            // make sure all bones are mapped
-            for (const bone in this.app.boneMap) {
-                if ( !this.app.boneMap[bone] ) {
-                    LX.popup("All bones must be mapped!");
-                    return;
-                }
-            }
-
-            panel.clear();
-            this.dialogClosable.root.remove();
-
-            this.app.configurer.setBoneMap(this.app.boneMap);
-            
-            if (this.configFile.bodyController){
-                this.app.configurer.computeAxes(this.configFile.bodyController.axes);
-                this.app.configurer.setConfig(this.configFile.bodyController);
-                this.config.elbowRaise = this.configFile.bodyController.elbowRaise * Math.PI / 180;    
-                this.config.shoulderRaise = this.configFile.bodyController.shoulderRaise.map((x) => x * Math.PI / 180);    
-                this.config.shoulderHunch = this.configFile.bodyController.shoulderHunch.map((x) => x * Math.PI / 180);    
-            }
-            else {
-                this.app.configurer.computeAxes();
-                this.app.configurer.computeConfig();
-            }
-
-            this.app.configurerHelper = new ConfigurerHelper( this.app.configurer, this.app.camera, this.app.renderer.domElement );
-            this.app.configurerHelper.transformControls.addEventListener( "dragging-changed", (e)=>{ this.app.controls.enabled = !e.value; } );
-
-            this.app.renderer.domElement.addEventListener( "pointermove", (e)=>{
-                this.app.configurerHelper.mouse.x = ( e.offsetX / this.app.renderer.domElement.parent.size[0] ) * 2 - 1;
-                this.app.configurerHelper.mouse.y = - ( e.offsetY / this.app.renderer.domElement.parent.size[1] ) * 2 + 1;
-                this.panelA.widgets["Point"].onSetValue( this.app.configurerHelper.getPointHovered() ? this.app.configurerHelper.getPointHovered().name : ( this.app.configurerHelper.getPointSelected() ? this.app.configurerHelper.getPointSelected().name : null) );
-            });
-
-            this.bodyLocations(this.panelA);
-
-            this.config.boneMap = JSON.parse( JSON.stringify( this.app.boneMap ) );
-            this.config.axes = this.app.configurer.getAxes();
-            this.app.ik_configurer = new GeometricArmIK(this.app.skeletonVisible, this.config, false);
-            this.config.boneMap = JSON.parse( JSON.stringify( this.app.boneMap ) );
-            this.app.ik_configurer_left = new GeometricArmIK(this.app.skeletonVisible, this.config, true);
-        
-        }); // close dialog
-        panel.merge();
     }
 
     bodyLocations( panel ) {
@@ -628,16 +687,6 @@ class AppGUI{
     miscellaneous( panel ) {
         panel.refresh = () => {
             panel.clear();
-            panel.branch("Action Units of Avatar Parts");
-            panel.addTextArea(null, "Here you can select which Action Units affect each mesh of your avatar. If the list is empty all action units will be taken into account. This is an optional step.", null, {disabled: true, fitHeight: true});
-            panel.addBlank(5);
-            
-            for (const partName in this.app.facial_configurer.avatarParts) {
-                panel.addArray(partName, this.partsMap[partName], (value) => {
-                    this.partsMap[partName] = value;
-                }, {filter: true, innerValues: Object.keys(this.app.facial_configurer.blendshapeMap)});
-                panel.addBlank(10);
-            }
             
             panel.branch("Arm Angles");
             let str = 
@@ -681,19 +730,19 @@ class AppGUI{
             let img = document.createElement("img");
             img.src = "./data/imgs/miscellaneous/Arm Angles Example 1.png";
             img.height = 300;
-            panel.branches[1].content.appendChild(img);
+            panel.branches[0].content.appendChild(img);
             let img2 = document.createElement("img");
             img2.src = "./data/imgs/miscellaneous/Arm Angles Example 2.png";
             img2.height = 300;
-            panel.branches[1].content.appendChild(img2);
+            panel.branches[0].content.appendChild(img2);
             let img3 = document.createElement("img");
             img3.src = "./data/imgs/miscellaneous/Arm Angles Example 3.png";
             img3.height = 300;
-            panel.branches[1].content.appendChild(img3);
+            panel.branches[0].content.appendChild(img3);
         };
         panel.refresh();
     }
-   
+
     addExport(panel) {
         panel.addButton(null, "Export", () => {
             
@@ -769,6 +818,9 @@ class AppGUI{
             this.app.miscTransformControls.enabled = false;
             this.app.miscMode = false;
             this.app.skeletonVisible.pose();
+
+            // show guide
+            this.showGuidedTour(AppGUI.GuideStage.BODY_LOCATIONS);
         }
         else if (value === "Action Units") {
             // change chroma color
@@ -790,6 +842,9 @@ class AppGUI{
             this.app.miscTransformControls.enabled = false;
             this.app.miscMode = false;
             this.app.skeletonVisible.pose();
+
+            // show guide
+            this.showGuidedTour(AppGUI.GuideStage.ACTION_UNITS);
         }
         else if (value === "Miscellaneous") {
             // change chroma color
@@ -806,10 +861,54 @@ class AppGUI{
             this.app.miscMode = true;
             this.app.miscTransformControls.visible = true;
             this.app.miscTransformControls.enabled = true;
+
+            // show guide
+            this.showGuidedTour(AppGUI.GuideStage.MISCELLANEOUS);
         }
         
         this.panelC.refresh();
     }
+
+    showGuidedTour(stage) {
+        const modal = document.getElementById("atelier-guide-modal");
+        const modals = document.querySelectorAll("#atelier-guide-modal .container");
+    
+        // Function to show the current tutorial modal
+        const showModal = (stage) => {
+            modals.forEach((modalContent, index) => {
+                modalContent.classList.toggle("show", index === stage);
+                modalContent.classList.toggle("hidden", index !== stage);
+            });
+            modal.classList.remove("hidden");
+        };
+    
+        // Function to close the modal
+        const closeModal = () => {
+            modal.classList.add("hidden");
+        };
+
+        modals.forEach((modalContent, index) => {
+            const buttons = modalContent.getElementsByTagName("button");
+    
+            // Add event listeners for buttons within each modal
+            Array.from(buttons).forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    closeModal();
+                });
+            });
+    
+            // Add close functionality for the "x" icon
+            const closeIcon = modalContent.querySelector("span.fa-xmark");
+            if (closeIcon) {
+                closeIcon.addEventListener("click", () => {
+                    closeModal();
+                });
+            }
+        });
+    
+        showModal(stage);
+    }
+
 }
 
 export { AppGUI };

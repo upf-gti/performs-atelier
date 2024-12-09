@@ -102,3 +102,94 @@ canvas {
         transform: translate(70px, 0) rotate(360deg);
     }
 }
+
+.warning .lexwidgetname{
+	color: yellow!important;
+}
+.lexwidgetname.source-color {
+	color: #96a0cc;
+}
+
+
+/* GUIDE */ 
+
+.guide-modal {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	z-index: 1000;
+	background-color: #1e1e2fe6;
+}
+
+.guide-modal .container {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	width: 20%;
+	transform: translate(-50%, -50%) scale(0.8);
+	background-color: #1E1E2F;
+	padding: 30px;
+	border-radius: 12px;
+	box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+	transition: transform 0.3s ease, opacity 0.3s ease;
+
+	color: #FFFFFF;
+}
+@media all and (orientation:portrait) {
+	.guide-modal .container {
+		width: 80%;
+	}
+}
+
+.guide-modal .container.show {
+	display: flex;
+	flex-direction: column;
+	transform: translate(-50%, -50%) scale(1);
+}
+
+.guide-modal .container h2 {
+	color: #BB86FC;
+}
+
+.guide-modal .container p {
+	text-align: justify;
+}
+
+.guide-modal .container p i, .guide-modal .container p strong {
+	color:#BB86FC;
+}
+
+.guide-modal .container img {
+	/* height: 200px; */
+	border-radius: 10px;
+}
+
+.guide-modal .container button {
+	background-color: #6200EA;
+	color: #FFFFFF;
+	border: none;
+	padding: 10px 15px;
+	border-radius: 5px;
+	cursor: pointer;
+	margin-top: 10px;
+	transition: background-color 0.3s;
+}
+
+.guide-modal .container button:hover {
+	background-color: #BB86FC;
+}
+
+.guide-modal .container span {
+	position: absolute;
+	width: 40px;
+	right: 0px;
+}
+
+.guide-modal span:hover {
+	cursor: pointer;
+	color: #BB86FC;
+}
+
+.iframe-text textarea{
+	color: var(--global-text-secondary)!important;
+}
