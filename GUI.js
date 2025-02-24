@@ -236,7 +236,7 @@ class AppGUI{
                         this.avatars[this.character]["filePath"]+= '?pose=T&morphTargets=ARKit&lod=1';
                         if(!this.configFile) {
                             try {
-                                const response = await fetch("https://webglstudio.org/3Dcharacters/ReadyEva/ReadyEva.json");
+                                const response = await fetch("https://resources.gti.upf.edu/3Dcharacters/ReadyEva/ReadyEva.json");
                                 if (!response.ok) {
                                     throw new Error(`Response status: ${response.status}`);
                                 }
@@ -560,7 +560,7 @@ class AppGUI{
         
         panel.branch("Map Blendshapes", {icon: "fa-regular fa-face-smile-wink"});
         
-        const url = "https://webglstudio.org/projects/signon/animics";
+        const url = "https://animics.gti.upf.edu";
         const actionUnits = Object.keys(this.app.facial_configurer.blendshapeMap);
         const values = [];
         for(let i = 0; i < actionUnits.length; i++) {
