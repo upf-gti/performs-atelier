@@ -337,7 +337,8 @@ class Configurer {
         let armLocations = {
             FOREARM: {
                 tgBone: "Elbow", pos: [ "Wrist", "Elbow" ],
-                dir: { RADIAL: { x:0, y:0, z:1 }, ULNAR: { x:0, y:0, z:-1 }, BACK: { x:0, y:1, z:0 }, PALMAR: { x:0, y:-1, z:0 } }
+                dir: { RADIAL: { x:0, y:0, z:1 }, ULNAR: { x:0, y:0, z:-1 }, BACK: { x:0, y:1, z:0 }, PALMAR: { x:0, y:-1, z:0 } },
+                color: 0x1be609
             },
             ELBOW: {
                 tgBone: "Arm",   pos: [ "Elbow" ],
@@ -346,7 +347,8 @@ class Configurer {
                     RIGHT: { x:0, y: (isLeft ? -1 : 1), z: 0 }, 
                     BACK: { x:0, y:0, z:-1 }, 
                     FRONT: { x:0, y:0, z:1 } 
-                }
+                },
+                color: 0xadfa50
             },
             UPPER_ARM: {
                 tgBone: "Arm",   pos: [ "Elbow", "Arm", "Elbow" ],
@@ -355,7 +357,8 @@ class Configurer {
                     RIGHT: { x:0, y:(isLeft ? -1 : 1), z: 0 }, 
                     BACK: { x:0, y:0, z:-1 }, 
                     FRONT: { x:0, y:0, z:1 } 
-                }
+                },
+                color: 0xe6ab07
             }
         }
         
@@ -369,8 +372,8 @@ class Configurer {
 
         // position of bone and direction to sample. World space
         for( let l in armLocations ){
-            let color = Math.random() * 0xffffff;
             let location = armLocations[l];
+            let color = location.color;
             for ( let d in location.dir ){
                 const boneIdx = this.boneMap[ (isLeft?"L":"R") + location.tgBone ];
                 let boneName = this.skeleton.bones[ boneIdx ].name;
@@ -461,7 +464,7 @@ class Configurer {
         // HAND 
         boneName = this.skeleton.bones[ wrist ].name;
         this.skeleton.bones[ fingerbases[1] ].getWorldPosition( worldPos ); // base of middle finger  world pos
-        worldPos.multiplyScalar(0.66).addScaledVector( worldWristPos, 0.33 );
+        worldPos.multiplyScalar(2.0/3.0).addScaledVector( worldWristPos, 1.0/3.0 );
         color = 0x000000;
         this.createHandPoint( isLeft, "HAND_BACK", boneName, worldPos, this.doRaycast( worldPos, handUpVec, false ), color ); // compute from inside of mesh
         this.createHandPoint( isLeft, "HAND_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.copy( handUpVec ).multiplyScalar(-1), false ), color ); // compute from inside of mesh
