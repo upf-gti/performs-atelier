@@ -478,6 +478,9 @@ class AppGUI{
             }
         ]);
 
+        panel.addButton(null, "Toggle Location Occlusions", () => {
+            this.app.configurerHelper.toggleDepthTest( );
+        });
         
         panel.addButton(null, "Toggle Visibility (shift + h)", () => {
             this.app.configurerHelper.toggleVisibility( );

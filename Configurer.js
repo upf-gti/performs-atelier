@@ -201,10 +201,9 @@ class Configurer {
         let z = this.worldZ.dot( worldDir );
         let resultX = 2*x / (a*a);
         let resultZ = 2*z / (b*b);
-        let result = new THREE.Vector3();
-        result.x = resultX * this.worldX.x + resultZ * this.worldZ.x;
-        result.y = resultX * this.worldX.y + resultZ * this.worldZ.y;
-        result.z = resultX * this.worldX.z + resultZ * this.worldZ.z;
+        let result = new THREE.Vector3(0,0,0);
+        result.addScaledVector( this.worldX, resultX );
+        result.addScaledVector( this.worldZ, resultZ );
         result.normalize();
         return result;
     }
@@ -378,7 +377,7 @@ class Configurer {
                 const boneIdx = this.boneMap[ (isLeft?"L":"R") + location.tgBone ];
                 let boneName = this.skeleton.bones[ boneIdx ].name;
 
-                // compute direction vectors. Since each bone might be slightly bended, recompute it on each location
+                // compute direction vectors. Since each bone might be slightly bent, recompute it on each location
                 this.skeleton.bones[ boneIdx + 1 ].getWorldPosition(armFrontVec);
                 this.skeleton.bones[ boneIdx ].getWorldPosition(worldPos);
                 armFrontVec.sub(worldPos).normalize();
@@ -402,9 +401,9 @@ class Configurer {
 
                 //like a matrix multiplication...
                 let localDir = location.dir[d];
-                worldDir.x = localDir.x * armFrontVec.x + localDir.y * armUpVec.x + localDir.z * armSideVec.x;
-                worldDir.y = localDir.x * armFrontVec.y + localDir.y * armUpVec.y + localDir.z * armSideVec.y;
-                worldDir.z = localDir.x * armFrontVec.z + localDir.y * armUpVec.z + localDir.z * armSideVec.z;
+                worldDir.addScaledVector( armFrontVec, localDir.x );
+                worldDir.addScaledVector( armUpVec, localDir.y );
+                worldDir.addScaledVector( armSideVec, localDir.z );
                 worldDir.normalize();
 
                 this.createHandPoint( isLeft, l + "_" + d, boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color );
