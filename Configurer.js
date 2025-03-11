@@ -525,15 +525,24 @@ class Configurer {
             this.skeleton.bones[ thumbidx + i + 1 ].getWorldPosition( _tempV3_0 );            
             _tempV3_0.subVectors( _tempV3_0, worldPos ).normalize();
             worldDir.crossVectors( _tempV3_0, handSideVec ).normalize(); // needs to recompute the up vector for each segment of thumb
+            if ( isLeft ){
+                worldDir.multiplyScalar(-1);
+            }
             this.createHandPoint( isLeft, s[i] + "_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
             if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_ULNAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
-            this.createHandPoint( isLeft, s[i] + "_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            worldDir.multiplyScalar(-1);
+            this.createHandPoint( isLeft, s[i] + "_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
             if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_RADIAL", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
         
-            worldDir.crossVectors( worldDir, _tempV3_0 ).normalize(); // needs to recompute the side vector for each segment of thumb
+
+            worldDir.crossVectors( _tempV3_0, worldDir ).normalize(); // needs to recompute the side vector for each segment of thumb. Inverted cross because of the multiplyScalar(-1) of RADIAL
+            if ( isLeft ){
+                worldDir.multiplyScalar(-1);
+            }
             this.createHandPoint( isLeft, s[i] + "_BACK", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
             if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_BACK", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
-            this.createHandPoint( isLeft, s[i] + "_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir.multiplyScalar(-1), false ), color ); // compute from inside of mesh
+            worldDir.multiplyScalar(-1);
+            this.createHandPoint( isLeft, s[i] + "_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); // compute from inside of mesh
             if ( s[i] == "1_BASE" ) { this.createHandPoint( isLeft, "THUMB_BALL_PALMAR", boneName, worldPos, this.doRaycast( worldPos, worldDir, false ), color ); }// compute from inside of mesh
         }
         
