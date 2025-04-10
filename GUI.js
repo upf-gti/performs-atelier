@@ -114,18 +114,18 @@ class AppGUI{
                     }
 
                     const path = v.split(".");
-                    let filename = path[path.length-2];
+                    let filename = path[ path.length > 1 ? (path.length-2) : 0];
                     filename = filename.split("/");
                     filename = filename.pop();
                     let extension = path[path.length-1];
                     extension = extension.split("?")[0];
                     if (extension == "glb" || extension == "gltf") { 
                         this.avatarName = this.character = filename;
-                        this.avatarFile = v;      
+                        this.avatarFile = v;
                         this.avatars[filename] = {"filePath": v};                       
                     }
                     else { LX.popup("Only accepts GLB and GLTF formats!"); }
-                }, {nameWidth: "43%"});
+                }, {nameWidth: "43%", placeholder: "https://resources.gti.upf.edu/3Dcharacters/Eva/Eva.glb"});
                 if(afromFile) {
                     avatarURL.domEl.classList.add('hidden');
                 }
@@ -196,7 +196,7 @@ class AppGUI{
                         }
                     }
                     else { LX.popup("Config file must be a JSON!"); }
-                }, {nameWidth: "43%"});
+                }, {nameWidth: "43%", placeholder: "https://resources.gti.upf.edu/3Dcharacters/Eva/Eva.json"});
 
                 if(cfromFile) {
                     configURL.domEl.classList.add('hidden');
