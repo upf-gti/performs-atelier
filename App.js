@@ -167,8 +167,8 @@ class App {
             $('#loading').fadeOut(); //hide();
         }
 
-        window.addEventListener( 'resize', this.onResize.bind( this ) );
-        this.renderer.domElement.addEventListener( 'resize', this.onResize.bind( this ) );
+        window.addEventListener( 'resize', (e) =>{ this.gui.delayedResize(); } );
+        // this.renderer.domElement.addEventListener( 'resize', this.gui.delayedResize.bind( this.gui ) );
 
     }
 
@@ -193,10 +193,10 @@ class App {
 
     }
     
-    onResize() {
-        this.camera.aspect = this.renderer.domElement.width / this.renderer.domElement.height;
+    resize( width, height ){
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(this.renderer.domElement.width, this.renderer.domElement.height, false);
+        this.renderer.setSize(width,height);
     }
 
     loadVisibleModel(filePath, modelRotation, callback = null) {

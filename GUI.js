@@ -30,6 +30,9 @@ class AppGUI{
         
         this.showGuidedTour(AppGUI.GuideStage.WELCOME);
 
+        this.delayedResizeID = null;
+        this.delayedResizeTime = 500;
+
         this.initDialog = new LX.Dialog("Upload avatar", panel => {
             this.avatarSelect(panel); 
         }, { size: ["40%"], closable: false });
@@ -37,6 +40,24 @@ class AppGUI{
 
     refresh(){
         this.gui.refresh();
+    }
+
+
+    resize( width = this.canvas_area.root.clientWidth, height = this.canvas_area.root.clientHeight ) {
+        this.app.resize(width, height);
+    }
+
+    delayedResize( width = this.canvas_area.root.clientWidth, height = this.canvas_area.root.clientHeight ) {
+        if ( this.delayedResizeID ) {
+            clearTimeout(this.delayedResizeID); this.delayedResizeID = null;
+        }
+        this.delayedResizeID = setTimeout( () => { this.delayedResizeID = null; this.resize(width, height); }, this.delayedResizeTime );
+
+        this.app.renderer.domElement.style.width = width + "px";
+        this.app.renderer.domElement.style.height = height + "px";
+        const aspect = width / height;
+        this.app.camera.aspect = aspect;
+        this.app.camera.updateProjectionMatrix();
     }
 
     avatarSelect( panel ) {
@@ -293,14 +314,10 @@ class AppGUI{
         canvas.style.width = "100%";
         canvas.style.height = "100%";
         right_area.size[0] = canvas.width; right_area.size[1] = canvas.height;
-        this.app.onResize();
+        this.canvas_area = right_area;
+        this.app.resize(canvas.width, canvas.height);
         
-        let that = this;
-        right_area.onresize = function( bounding ) {
-            canvas.width = bounding.width;
-            canvas.height = bounding.height;
-            that.app.onResize();
-        };
+        right_area.onresize = (bounding) =>{ this.delayedResize(bounding.width, bounding.height); }
         
         let modelRotation = (new THREE.Quaternion()).setFromAxisAngle( new THREE.Vector3(1,0,0), this.avatars[this.character]["modelRotation"] );
 
