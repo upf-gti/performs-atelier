@@ -168,10 +168,41 @@ class App {
         }
 
         window.addEventListener( 'resize', (e) =>{ this.gui.delayedResize(); } );
+        window.addEventListener( "message", this.onMessage.bind(this) );
         // this.renderer.domElement.addEventListener( 'resize', this.gui.delayedResize.bind( this.gui ) );
 
     }
 
+    onMessage(event) {
+       
+        let data = event.data;
+        
+        if ( typeof( data ) == "string" ) { 
+            try { 
+                data =  JSON.parse( data ); 
+            }
+            catch( e ) { 
+                if(data.includes("setImmediate")) {
+                    return;
+                }
+                console.error("Error while parsing an external message: ", event ); 
+            };
+        }
+        
+        if ( !data ) {
+            return;
+        }
+        const [name, model, config, rotation] = data;
+        this.gui.character =  this.gui.avatarName = name;
+        this.gui.avatars[name] = {
+            "filePath": model,
+            "modelRotation": rotation
+        }
+        this.gui.configFile = config;
+        this.gui.initDialog.root.getElementsByClassName("next-button")[0].getElementsByTagName("button")[0].click();
+        this.gui.initDialog.destroy();
+    }
+    
     animate() {
 
         requestAnimationFrame( this.animate.bind(this) );

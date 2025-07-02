@@ -52,17 +52,20 @@ class BoneMappingScene {
     this.scene.add(this.target);
 
     for(let srcBoneName in this.boneMap) {
-        if(!this.boneMap[srcBoneName]) {
+        if(this.boneMap[srcBoneName] == undefined) {
             const id = findIndexOfBoneByName(this.source, srcBoneName);
             if(id < 0) {
                 return;
             }
             this.source.instancedMesh.setColorAt( id, BoneMappingScene.UNMAPED_COLOR);
             this.source.instancedMesh.instanceColor.needsUpdate = true;
-        }
+          }
+          if(typeof(this.boneMap[srcBoneName]) == "number") {
+            this.boneMap[srcBoneName] = this.target.bones[this.boneMap[srcBoneName]].name;
+          }
     }
 
-    const mappedBonesNames = Object.values(this.boneMap);
+    const mappedBonesNames = Object.values(this.boneMap); // names or ids
     for (let i = 0; i < this.target.bones.length; i++) {
       const trgBoneName = this.target.bones[i].name;
       if (mappedBonesNames.indexOf(trgBoneName) < 0) {

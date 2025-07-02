@@ -441,7 +441,8 @@ class AppGUI{
         for (const part in this.app.boneMap) {
             if ((i % 2) == 0) panel.sameLine(2);
             i++;
-            const widget = panel.addDropdown(part, bonesName, this.app.boneMap[part], (value, event) => {
+            const boneMapName = this.app.boneMap[part];
+            const widget = panel.addDropdown(part, bonesName, typeof(boneMapName) == "string" ? boneMapName : bonesName[boneMapName], (value, event) => {
                 this.app.boneMap[part] = value;                    
             }, {filter: true});
             if(!this.app.boneMap[part]) {
@@ -459,7 +460,8 @@ class AppGUI{
         panel.addTextArea(null, s, null, {disabled: true, fitHeight: true});
         panel.addText("Source", "Target", null, {disabled: true});
         if(bone) {
-            const widget = panel.addDropdown(bone.name, bonesName, this.app.boneMap[bone.name], (value, event) => {
+            const boneMapName = this.app.boneMap[bonesName];
+            const widget = panel.addDropdown(bone.name, bonesName,  typeof(boneMapName) == "string" ? boneMapName : bonesName[boneMapName], (value, event) => {
                 this.app.boneMap[bone.name] = value;  
                 this.app.boneMapScene.onUpdateFromGUI(bone.name);                  
             }, {filter: true});
